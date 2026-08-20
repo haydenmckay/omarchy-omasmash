@@ -13,18 +13,50 @@
 
 set -uo pipefail
 
-PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Resolve symlinks before deriving the project root. omasmash-install links
+# these onto PATH, and through that link BASH_SOURCE is ~/.local/bin/omasmash,
+# so the naive dirname/.. lands on ~/.local and every path built from it is
+# wrong -- which silently broke the launcher entry and the hotkey while the
+# same commands kept working when run from the repo.
+PROJECT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 CONFIG="$PROJECT/dev-shell.qml"
 
+# Only ever matches an instance on the CURRENT Wayland display.
+#
+# Without that filter this happily found the instance running inside the
+# nested test compositor and locked *that* -- so the hotkey and the launcher
+# both appeared to do nothing on the real session, because the lock was
+# landing on an invisible nested screen. Any host that has ever run the nested
+# harness hits this.
 find_instance() {
-  quickshell list --all 2>/dev/null | awk -v cfg="$CONFIG" '
+  local want="${WAYLAND_DISPLAY:-}"
+  quickshell list --all 2>/dev/null | awk -v cfg="$CONFIG" -v want="$want" '
     /^Instance /   { id = $2; sub(":", "", id) }
     /Config path:/ { path = $3 }
     /Display connection:/ {
       disp = $3; sub("wayland/", "", disp)
-      if (path == cfg) { print id, disp }
+      if (path == cfg && (want == "" || disp == want)) { print id, disp }
     }
   ' | tail -1
+}
+
+# Start the service if it is not already up, and wait for its IPC to answer.
+#
+# Needed for the launcher entry and the hotkey to work at all: both fire into a
+# session where nothing of ours is running yet, and a toggle that fails because
+# there is no daemon is a toggle that does nothing the first time you press it.
+ensure_running() {
+  [[ -n "$(find_instance)" ]] && return 0
+
+  quickshell -d -p "$CONFIG" >/dev/null 2>&1
+
+  for _ in $(seq 1 40); do
+    [[ -n "$(find_instance)" ]] && return 0
+    sleep 0.25
+  done
+
+  echo "omasmash service failed to start" >&2
+  return 1
 }
 
 call() {
@@ -44,13 +76,14 @@ case "${1:-status}" in
   # screen but never takes exclusive keyboard focus -- Escape always quits.
   preview) exec quickshell -p "$PROJECT/dev-window.qml" ;;
   full)    exec quickshell -p "$PROJECT/dev-fullscreen.qml" ;;
-  lock)    call lock ;;
+  start)   ensure_running && echo "service running" ;;
+  lock)    ensure_running && call lock ;;
   unlock)  call unlock ;;
   locked)  call isLocked ;;
   status)  call status | { command -v jq >/dev/null && jq . || cat; } ;;
   where)   find_instance ;;
   *)
-    echo "usage: omasmash {run|nested|preview|full|lock|unlock|locked|status|where}" >&2
+    echo "usage: omasmash {run|start|nested|preview|full|lock|unlock|locked|status|where}" >&2
     exit 1
     ;;
 esac

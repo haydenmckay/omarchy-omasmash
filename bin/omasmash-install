@@ -12,7 +12,12 @@
 
 set -euo pipefail
 
-PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Resolve symlinks before deriving the project root. omasmash-install links
+# these onto PATH, and through that link BASH_SOURCE is ~/.local/bin/omasmash,
+# so the naive dirname/.. lands on ~/.local and every path built from it is
+# wrong -- which silently broke the launcher entry and the hotkey while the
+# same commands kept working when run from the repo.
+PROJECT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 APPS="$HOME/.local/share/applications"
 ICONS="$HOME/.local/share/icons/hicolor/256x256/apps"
 BIN="$HOME/.local/bin"

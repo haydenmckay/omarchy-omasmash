@@ -17,6 +17,23 @@ FocusScope {
   property string passphrase: "omarchy"
   property int matchProgress: 0
 
+  // Whether a keypress paints the character that was actually typed.
+  //
+  // Off by default, and that is a security decision rather than a style one.
+  // The PAM fallback means a user may type their real password into this
+  // surface -- and painting each character 220px tall is the most effective
+  // shoulder-surfing attack imaginable. The burst is the delight here, not the
+  // letter's identity, so a random glyph costs the toy nothing and closes the
+  // leak completely. Turn it on only for a machine where nobody will ever type
+  // a password into it.
+  property bool revealTypedKeys: false
+  readonly property string glyphPool: "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+  function glyphFor(text) {
+    if (revealTypedKeys) return text.toUpperCase()
+    return glyphPool.charAt(Math.floor(Math.random() * glyphPool.length))
+  }
+
   // Warp-in: the camera flies forward through a field of letters that are
   // themselves standing still. That distinction is the whole effect -- glyphs
   // do not travel outward from a point, they hold a fixed spot in space and
@@ -321,7 +338,7 @@ FocusScope {
       }
 
       root.keyTyped(label)
-      root.burst(label.toUpperCase(),
+      root.burst(root.glyphFor(label),
                  playfield.width * (0.12 + Math.random() * 0.76),
                  playfield.height * (0.14 + Math.random() * 0.68))
     }
@@ -367,7 +384,10 @@ FocusScope {
 
     function update(x, y) {
       if (!root.active) return
-      var near = (x >= width - root.cornerSize && y <= root.cornerSize)
+      // Sized to comfortably contain the visible affordance -- pointing at
+      // the thing that says "hold here" has to be what triggers it.
+      var near = (x >= width - Math.max(root.cornerSize, cornerHint.width + 36)
+                  && y <= Math.max(root.cornerSize, cornerHint.height + 36))
       if (near === inCorner) return
       inCorner = near
       if (near) { progress = 0; cornerTimer.restart() } else { progress = 0; cornerTimer.stop() }
@@ -387,19 +407,46 @@ FocusScope {
     }
   }
 
-  // Corner-hold progress, pinned to the top right.
+  // Corner-hold affordance, top right.
+  //
+  // It used to be invisible until the pointer was already inside the hot
+  // corner, which meant the only people who could find it were people who had
+  // read the source. An unlock route nobody can discover is not an unlock
+  // route. It sits there quietly, and fills as you hold.
   Rectangle {
+    id: cornerHint
     anchors.right: parent.right
     anchors.top: parent.top
-    width: root.cornerSize; height: 4
-    color: "transparent"
-    opacity: cornerWatch.inCorner ? 0.85 : 0
-    Behavior on opacity { NumberAnimation { duration: 150 } }
+    anchors.margins: 18
+    width: cornerLabel.implicitWidth + 28
+    height: cornerLabel.implicitHeight + 20
+    radius: 10
+    color: root.theme ? root.theme.background : "#1a1b26"
+    opacity: (root.active && !root.introPlaying) ? (cornerWatch.inCorner ? 0.95 : 0.62) : 0
+    border.width: 1
+    border.color: root.theme ? root.theme.accent : "#7aa2f7"
+    Behavior on opacity { NumberAnimation { duration: 200 } }
 
+    Text {
+      id: cornerLabel
+      anchors.centerIn: parent
+      text: cornerWatch.inCorner ? "keep holding…" : "or hold here"
+      color: root.theme ? root.theme.foreground : "#a9b1d6"
+      opacity: 0.85
+      font.pixelSize: 13
+      font.letterSpacing: 1
+    }
+
+    // Fills left to right as the hold completes, same gauge language as the
+    // passphrase below the word on the other side of the screen.
     Rectangle {
-      anchors.right: parent.right
-      height: parent.height
-      width: parent.width * Math.min(1, cornerWatch.progress)
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      anchors.leftMargin: 1
+      anchors.bottomMargin: 1
+      height: 3
+      radius: 1.5
+      width: (parent.width - 2) * Math.min(1, cornerWatch.progress)
       color: root.theme ? root.theme.accent : "#7aa2f7"
     }
   }

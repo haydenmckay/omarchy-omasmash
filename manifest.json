@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "author": "trigz",
   "license": "MIT",
-  "description": "Smash the keyboard safely. Every key paints your theme's colours; the machine stays untouchable.",
+  "description": "Beautiful, theme-aware keyboard smash for toddlers and adults alike. Don't let little fingers interrupt your agent workflow — or smash it out yourself when “fix it, and don't make any mistakes” hasn't worked for the tenth time.",
   "kinds": [
     "service"
   ],

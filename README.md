@@ -2,16 +2,18 @@
 
 ![Omasmash](preview.png)
 
-Smash the keyboard safely. Every keypress paints a big letter in your active
-theme's colours, every click splashes, every drag trails — and the machine
-underneath stays untouchable.
+**Beautiful, theme-aware keyboard smash for toddlers and adults alike.**
+
+Every keypress paints a big letter in your active theme's colours, every click
+splashes, every drag trails — and the machine underneath stays untouchable.
 
 Two reasons people run it:
 
-- **You have a small child** who grabs the keyboard whenever you're at the
-  machine, and lately has opinions about your agents.
-- **You need to get some frustration out** and would rather not do it into a
-  Slack thread.
+- **Don't let little fingers interrupt your agent workflow.** They grab the
+  keyboard the moment you sit down, and lately they have opinions about your
+  agents.
+- **Smash it out yourself** when *"fix it, and don't make any mistakes"* hasn't
+  worked for the tenth time.
 
 > **Status: pre-alpha.** The session-lock premise test passes
 > (`docs/premise-test.md`), but the passphrase and corner-hold unlock paths
@@ -70,9 +72,9 @@ Three ways out, in order of everyday usefulness:
 2. **Hold the top-left corner** for three seconds. A thin accent-coloured bar
    fills to show progress. Discoverable for an adult, impossible while
    flailing.
-3. **Type your real password and press Enter.** There is no visible field —
-   keystrokes accumulate invisibly and Enter submits them to PAM. This always
-   works, even if you have changed the passphrase and forgotten it.
+Your real password also works as a last-resort recovery route — see
+[RECOVERY](#recovery). It is not the everyday way in, and there is a reason
+it is documented down there rather than here.
 
 ## This is a child lock, not a security lock
 
@@ -101,6 +103,19 @@ keyboard — and because a process that dies holding the submap would otherwise
 leave you a desktop with no shortcuts at all. The service also clears the
 submap unconditionally on startup, since nothing else on the system will.
 
+## A note on typed characters
+
+Keypresses do **not** paint the character you typed — the glyph is random.
+
+That is deliberate. Because the password fallback exists, someone may type a
+real password into this surface, and painting each character 220px tall is the
+most effective shoulder-surfing attack imaginable. The burst is the delight
+here, not the letter's identity, so a random glyph costs nothing.
+
+If you want key-accurate letters (a toddler learning their alphabet, say, on a
+machine nobody types a password into), set `revealTypedKeys: true` on the play
+surface — and understand what you are turning off.
+
 ## RECOVERY
 
 `ext-session-lock-v1` gives the compositor the last word: **if the locking
@@ -115,7 +130,13 @@ samples, the service concludes the surface has stopped painting and releases
 the lock itself. This covers a wedged surface — it cannot cover a dead
 process.
 
-**2. IPC unlock, from another machine or an SSH session:**
+**2. Your PAM password.** Type it on the play surface and press Enter — there
+is no visible field, keystrokes accumulate invisibly and Enter submits them.
+Nothing you type is painted (see above), but treat this as a recovery route
+rather than a habit: a lock screen that accepts your account password in an
+unlabelled buffer is not a pattern to lean on.
+
+**3. IPC unlock, from another machine or an SSH session:**
 
 ```bash
 ~/Work/omarchy-omasmash/bin/omasmash unlock
@@ -124,7 +145,7 @@ process.
 Works whenever the process is alive and answering, including when the screen
 is showing nothing useful.
 
-**3. The TTY escape.** If the process is dead and the compositor is still
+**4. The TTY escape.** If the process is dead and the compositor is still
 holding the lock:
 
 ```
