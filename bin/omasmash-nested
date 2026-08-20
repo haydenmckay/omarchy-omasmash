@@ -26,9 +26,12 @@ fi
 # "it isn't loading" -- the compositor is fine, there is simply no window. So
 # always clear a stale one before starting. Use --kill rather than closing the
 # window and this never arises.
+# `|| true` is load-bearing under `set -e`: with no stale compositor running,
+# the loop's final grep exits 1, the command substitution inherits it, and the
+# script dies here silently -- before printing anything at all.
 stale=$(pgrep -x Hyprland | while read -r p; do
   tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q omasmash && echo "$p"
-done)
+done || true)
 if [[ -n "$stale" ]]; then
   echo "clearing stale nested compositor: $stale"
   # shellcheck disable=SC2086

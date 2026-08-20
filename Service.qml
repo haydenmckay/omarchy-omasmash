@@ -51,6 +51,21 @@ Item {
   property bool strandedLockResolved: false
   property bool hotkeysBlocked: false
 
+  // The play surface lives inside WlSessionLockSurface, which the compositor
+  // instantiates per output only while locked. Its `id` is NOT resolvable from
+  // this scope -- referencing it here throws, silently, at runtime.
+  //
+  // That is not a style point. The watchdog timer used to sample
+  // `playSurface.canary` directly, so every sample threw and the watchdog
+  // never observed anything: the one safety net covering a wedged surface was
+  // dead code that looked alive, and only trying to prove it worked found it.
+  //
+  // So the surface pushes its canary up here, and takes the stall flag back
+  // down. Both directions cross the boundary through root properties, which do
+  // resolve from inside the lock surface.
+  property real surfaceCanary: -1
+  property bool stallRequested: false
+
   // Rolling window of recent keystrokes. Never displayed, never logged.
   property string keyBuffer: ""
   // How many leading characters of the passphrase the user currently has
@@ -97,6 +112,8 @@ Item {
     keyBuffer = ""
     matchProgress = 0
     failedAttempts = 0
+    stallRequested = false
+    surfaceCanary = -1
     lockRequested = true
     logEvent("lock-requested")
     theme.refresh()
@@ -298,7 +315,7 @@ Item {
     interval: 5000
     repeat: true
     running: watchdog.armed
-    onTriggered: watchdog.sample(playSurface.canary)
+    onTriggered: watchdog.sample(root.surfaceCanary)
   }
 
   // A lock present before we ever asked for one is an orphan behind the
@@ -354,6 +371,9 @@ Item {
         cornerSize: root.cornerSize
         passphrase: root.passphrase
         matchProgress: root.matchProgress
+        stallCanary: root.stallRequested
+
+        onCanaryChanged: root.surfaceCanary = canary
 
         onKeyTyped: function(text) { root.handleKey(text) }
         onSubmitRequested: root.submitBufferToPam()
@@ -473,6 +493,17 @@ Item {
       return root.locked ? "true" : "false"
     }
 
+    // Test-only: freeze the render-loop canary so the watchdog sees a surface
+    // that has stopped painting. The lock should release itself within about
+    // ten seconds. This is how the watchdog gets proven; without it the one
+    // safety net that covers a wedged surface is an untested claim.
+    function stall(): string {
+      if (!root.locked) return "not-locked"
+      root.stallRequested = true
+      root.logEvent("test: canary stalled")
+      return "ok"
+    }
+
     function status(): string {
       return JSON.stringify({
         locked: root.locked,
@@ -484,6 +515,8 @@ Item {
         passwordPam: root.passwordPamConfigured,
         strandedLock: root.strandedLock,
         watchdogArmed: watchdog.armed,
+        canaryStalled: root.stallRequested,
+        surfaceCanary: root.surfaceCanary,
         hotkeysBlocked: root.hotkeysBlocked,
         matchProgress: root.matchProgress,
         theme: root.theme.name,

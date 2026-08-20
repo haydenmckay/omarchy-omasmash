@@ -58,6 +58,14 @@ design decision follows from that. Before touching the lock path:
 - **Keep the ffmpeg palette out of the frames directory.** The second pass
   globs that directory, and a palette image mixed in as a differently-sized
   frame fails with "Internal bug, should not have happened".
+- **`WlSessionLockSurface` children are NOT in the service's root scope.**
+  The surface is instantiated per output, only while locked, and referencing
+  its `id` from root throws silently at runtime. This made the watchdog dead
+  code that armed and disarmed correctly and could never fire. Route values
+  across the boundary through root properties in both directions.
+- **Hot-reload leaves a stale surface while a lock is held.** IPC picks up
+  the new code but the lock surface does not. Kill and restart the instance
+  when changing anything inside `WlSessionLockSurface`.
 - **The watchdog canary is animation-driven, not timer-driven.** Animations
   only advance when frames are produced, so a frozen canary truthfully means
   "not painting". A Timer keeps ticking on a surface that renders nothing.

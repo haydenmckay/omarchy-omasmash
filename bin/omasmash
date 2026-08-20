@@ -81,9 +81,10 @@ case "${1:-status}" in
   unlock)  call unlock ;;
   locked)  call isLocked ;;
   status)  call status | { command -v jq >/dev/null && jq . || cat; } ;;
+  stall)   call stall ;;   # test-only: prove the watchdog fires
   where)   find_instance ;;
   *)
-    echo "usage: omasmash {run|start|nested|preview|full|lock|unlock|locked|status|where}" >&2
+    echo "usage: omasmash {run|start|nested|preview|full|lock|unlock|locked|status|stall|where}" >&2
     exit 1
     ;;
 esac

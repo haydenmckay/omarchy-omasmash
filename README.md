@@ -122,8 +122,13 @@ yourself out. Layers of defence, cheapest first:
 **1. The paint watchdog (automatic).** The play surface drives a canary from
 the render loop. If it stops advancing for two consecutive five-second
 samples, the service concludes the surface has stopped painting and releases
-the lock itself. This covers a wedged surface — it cannot cover a dead
-process.
+the lock itself — verified end to end, about twelve seconds from stall to
+unlock ([test](docs/watchdog-test.md)).
+
+It covers rendering stopping while the event loop still runs. It cannot cover
+a dead process, and it cannot cover a wedged QML event loop — the watchdog
+runs in the same engine, so an infinite loop stops it too. That is what the
+routes below are for.
 
 **2. Your PAM password**, typed on the play surface followed by Enter. Nothing
 you type is displayed — see [`docs/security.md`](docs/security.md).

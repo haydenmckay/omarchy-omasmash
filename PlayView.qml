@@ -93,11 +93,19 @@ FocusScope {
   // signal that the surface has stopped painting -- unlike a Timer, which
   // keeps ticking on a surface that renders nothing.
   property real canary: 0
+
+  // Test hook. Halting the animation is exactly what a surface that has
+  // stopped presenting frames looks like from the service's side, so this
+  // exercises the real detection and unlock path rather than a mock of it.
+  // Driven only by the `stall` IPC call, which exists to be able to prove the
+  // watchdog works at all -- see docs/premise-test.md.
+  property bool stallCanary: false
+
   NumberAnimation on canary {
     from: 0; to: 100000
     duration: 200000
     loops: Animation.Infinite
-    running: true
+    running: !root.stallCanary
   }
 
   function fileUrl(path, version) {
