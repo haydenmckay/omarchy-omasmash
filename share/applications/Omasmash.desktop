@@ -2,7 +2,7 @@
 Version=1.0
 Name=Omasmash
 GenericName=Safe keyboard smash
-Comment=Theme-aware keyboard smash for toddlers and adults alike. The machine stays untouchable.
+Comment=Beautiful, theme-aware keyboard smash with a real lock screen underneath.
 Exec=omasmash-toggle
 Icon=omasmash
 Terminal=false

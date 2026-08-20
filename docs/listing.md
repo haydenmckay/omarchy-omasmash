@@ -6,19 +6,38 @@ someone what the code does, not why they would want it.
 
 ## Description (the one in `manifest.json`)
 
-> Beautiful, theme-aware keyboard smash for toddlers and adults alike. Don't
-> let little fingers interrupt your agent workflow — or smash it out yourself
-> when "fix it, and don't make any mistakes" hasn't worked for the tenth time.
+> Beautiful, theme-aware keyboard smash with a real lock screen underneath.
+> Little fingers can't reach your agents — and neither can you, on the tenth
+> "fix it, and don't make any mistakes."
 
-Doing three jobs at once: **beautiful, theme-aware** is the differentiator over
-every browser-based smash toy; **toddlers and adults alike** names both
-audiences in four words, which is the whole reason this is not called OmaBaby;
-and the last clause is the joke that makes it shareable, aimed squarely at
-people already running agents — which on this marketplace is everyone.
+187 characters, doing four jobs.
 
-Kept to three lines on purpose. Longer descriptions correlate slightly
-*negatively* with installs, and the real growth constraint is GitHub stars and
-off-marketplace attention, not listing metadata.
+**"Beautiful, theme-aware"** is the differentiator over every browser-based
+smash toy, and it is the honest one: the surface is painted from the user's own
+palette and wallpaper.
+
+**"with a real lock screen underneath"** is the product in six words — it names
+the guarantee *and* puts "lock screen" where the search index will find it.
+Lock screens are two of this marketplace's top six listings, so that phrase is
+worth its space twice over.
+
+**"Little fingers can't reach your agents — and neither can you"** names both
+audiences in one parallel instead of the flabby "for toddlers and adults alike".
+The turn does real work: the adult benefit is not just stress relief, it is
+being stopped from typing something you will regret.
+
+**The closing quote** is the shareable part, aimed at people already running
+agents — which on this marketplace is everyone.
+
+### Rejected
+
+- *"for toddlers and adults alike"* — states the two audiences instead of
+  demonstrating them, and "alike" is filler.
+- Leading with the toddler — halves the audience in the first four words, which
+  is the exact mistake the name change was made to avoid.
+- Anything longer. Description length correlates slightly *negatively* with
+  installs, and the real growth constraint is GitHub stars and off-marketplace
+  attention, not listing metadata.
 
 ## What not to put in it
 

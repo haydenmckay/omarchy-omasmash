@@ -2,18 +2,13 @@
 
 ![Omasmash](preview.png)
 
-**Beautiful, theme-aware keyboard smash for toddlers and adults alike.**
+**Beautiful, theme-aware keyboard smash with a real lock screen underneath.**
 
 Every keypress paints a big letter in your active theme's colours, every click
 splashes, every drag trails — and the machine underneath stays untouchable.
 
-Two reasons people run it:
-
-- **Don't let little fingers interrupt your agent workflow.** They grab the
-  keyboard the moment you sit down, and lately they have opinions about your
-  agents.
-- **Smash it out yourself** when *"fix it, and don't make any mistakes"* hasn't
-  worked for the tenth time.
+Little fingers can't reach your agents — and neither can you, on the tenth
+*"fix it, and don't make any mistakes."*
 
 > **Status: pre-alpha.** The session-lock premise test passes
 > (`docs/premise-test.md`), but the passphrase and corner-hold unlock paths
