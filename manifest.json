@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "trigz.omasmash",
+  "id": "io.github.haydenmckay.omasmash",
   "name": "Omasmash",
   "version": "0.1.0",
-  "author": "trigz",
+  "author": "haydenmckay",
   "license": "MIT",
   "description": "Beautiful, theme-aware keyboard smash with a real lock screen underneath. Little fingers can't reach your agents — and neither can you, on the tenth “fix it, and don't make any mistakes.”",
   "kinds": [

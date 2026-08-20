@@ -518,8 +518,8 @@ toddler smashing keys is the marketing.**
       `omarchy plugin add <url>` outright), with: `schemaVersion`, `id`, `name`,
       `version` (semver, ≤64 chars), `author`, `license`, `description`,
       `kinds`, `entryPoints`.
-- [ ] Plugin ID migrated from the dev ID `trigz.omasmash` to
-      `io.github.trigz.omasmash`. Must not start with `omarchy.*`.
+- [ ] Plugin ID migrated from the dev ID `io.github.haydenmckay.omasmash` to
+      `io.github.io.github.haydenmckay.omasmash`. Must not start with `omarchy.*`.
 - [ ] Public repo with README and a licence file.
 - [ ] Validated against a **fresh clone**, not the working checkout:
       ```bash

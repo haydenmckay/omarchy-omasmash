@@ -128,7 +128,7 @@ Collision-checked against all 694 catalog entries (exact, substring, and fuzzy m
 
 Two near-collisions found in the catalog worth flagging regardless of choice:
 
-- **`ourongxing.omash`** ("omash", a Mihomo proxy selector, 80 views / 0 copies). One letter from `omasmash`. Weak incumbent, but the string proximity is real for install commands and plugin ids. Mitigate by keeping the id as `trigz.omasmash` — author-scoped ids make this a non-issue in practice.
+- **`ourongxing.omash`** ("omash", a Mihomo proxy selector, 80 views / 0 copies). One letter from `omasmash`. Weak incumbent, but the string proximity is real for install commands and plugin ids. Mitigate by keeping the id as `io.github.haydenmckay.omasmash` — author-scoped ids make this a non-issue in practice.
 - **`asdfsnlr.omarazer`** ("OmaRazer") — kills OmaRage, not the winner.
 
 Everything else on the list is clear in the catalog.
