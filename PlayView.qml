@@ -29,7 +29,25 @@ FocusScope {
   property bool revealTypedKeys: false
   readonly property string glyphPool: "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+  // Emoji turn up on their own, at intervals nobody can predict.
+  //
+  // Predictable rewards stop being rewards. A letter every time is a machine;
+  // a letter every time *except* when a dinosaur appears is a slot machine,
+  // and that is the difference between a toddler pressing keys for ten seconds
+  // and pressing them for ten minutes. Deliberately not tied to any particular
+  // key -- there is no combination to learn, so it never becomes a chore.
+  property real emojiChance: 0.16
+  readonly property var emojiPool: [
+    "🦖", "🐙", "🚀", "🌈", "⭐", "🍕", "🐸", "🎈", "🦄", "🍄",
+    "🐳", "🌻", "⚡", "🎨", "🐝", "🍦", "🚂", "🪐", "🐧", "🎸"
+  ]
+
+  function randomEmoji() {
+    return emojiPool[Math.floor(Math.random() * emojiPool.length)]
+  }
+
   function glyphFor(text) {
+    if (Math.random() < emojiChance) return randomEmoji()
     if (revealTypedKeys) return text.toUpperCase()
     return glyphPool.charAt(Math.floor(Math.random() * glyphPool.length))
   }
@@ -456,6 +474,25 @@ FocusScope {
     anchors.fill: parent
   }
 
+  // Ambient emoji: something happens even when nobody is touching the
+  // keyboard. Keeps the surface alive while a toddler is looking at it rather
+  // than hitting it, and re-randomises its own interval each time so there is
+  // never a rhythm to anticipate.
+  Timer {
+    id: ambientEmoji
+    running: root.active && !root.introPlaying
+    repeat: true
+    interval: 2600
+
+    onTriggered: {
+      interval = 1800 + Math.floor(Math.random() * 4200)
+      if (!root.theme) return
+      root.burst(root.randomEmoji(),
+                 root.width * (0.12 + Math.random() * 0.76),
+                 root.height * (0.14 + Math.random() * 0.68))
+    }
+  }
+
   // Full-frame flash at the moment of impact.
   //
   // Short, bright, and deliberately not opaque. The first version peaked at
@@ -589,10 +626,16 @@ FocusScope {
       property color tint: "white"
       property real spin: 0
 
+      // Emoji only render in colour under a font that carries them, and that
+      // font has no bold weight -- asking for bold silently drops back to a
+      // monochrome fallback glyph.
+      readonly property bool isEmoji: label.charCodeAt(0) > 0x2000
+
       text: label
       color: tint
-      font.pixelSize: 220
-      font.bold: true
+      font.pixelSize: isEmoji ? 190 : 220
+      font.family: isEmoji ? "Noto Color Emoji" : glyph.font.family
+      font.bold: !isEmoji
       transformOrigin: Item.Center
       horizontalAlignment: Text.AlignHCenter
       verticalAlignment: Text.AlignVCenter

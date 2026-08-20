@@ -39,13 +39,16 @@ agents — which on this marketplace is everyone.
   installs, and the real growth constraint is GitHub stars and off-marketplace
   attention, not listing metadata.
 
-## What not to put in it
+## The password route is fine to mention
 
-Do not mention the PAM password fallback. It exists so nobody is ever locked
-out, but a listing that advertises "accepts your account password" invites
-people to use it as the everyday route, and an unlabelled buffer that accepts
-your account password is not a pattern to promote. It lives in the README's
-recovery section, which is where someone looks when they actually need it.
+An earlier draft of this file said to keep the PAM fallback out of the listing,
+because advertising "accepts your account password" invited people to type
+their password into a surface that painted every keystroke 220px tall.
+
+That is fixed at the source: the glyph shown is never the key pressed
+(`docs/security.md`). The route is now genuinely safe in front of an audience,
+so it can be described as what it is — you are never locked out of your own
+machine.
 
 ## Category
 

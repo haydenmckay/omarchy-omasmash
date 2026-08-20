@@ -67,9 +67,11 @@ Three ways out, in order of everyday usefulness:
 2. **Hold the top-left corner** for three seconds. A thin accent-coloured bar
    fills to show progress. Discoverable for an adult, impossible while
    flailing.
-Your real password also works as a last-resort recovery route — see
-[RECOVERY](#recovery). It is not the everyday way in, and there is a reason
-it is documented down there rather than here.
+3. **Type your real password and press Enter.** There is no visible field —
+   keystrokes accumulate invisibly and Enter submits them to PAM. This always
+   works, even if you changed the passphrase and forgot it. Safe to use in
+   front of people: nothing you type is ever displayed
+   (see [why](docs/security.md)).
 
 ## This is a child lock, not a security lock
 
@@ -98,18 +100,16 @@ keyboard — and because a process that dies holding the submap would otherwise
 leave you a desktop with no shortcuts at all. The service also clears the
 submap unconditionally on startup, since nothing else on the system will.
 
-## A note on typed characters
+## Typed characters are never shown
 
-Keypresses do **not** paint the character you typed — the glyph is random.
+Press `k` and you get some other letter, or a dinosaur. The glyph is random,
+deliberately — it is what makes the password route above safe to use in a room
+with other people in it. Full reasoning, and the one case for turning it off,
+in [`docs/security.md`](docs/security.md).
 
-That is deliberate. Because the password fallback exists, someone may type a
-real password into this surface, and painting each character 220px tall is the
-most effective shoulder-surfing attack imaginable. The burst is the delight
-here, not the letter's identity, so a random glyph costs nothing.
-
-If you want key-accurate letters (a toddler learning their alphabet, say, on a
-machine nobody types a password into), set `revealTypedKeys: true` on the play
-surface — and understand what you are turning off.
+Emoji also arrive on their own, at intervals that keep changing. A letter every
+time is a machine; a letter every time *except* when a rocket shows up is worth
+staying for.
 
 ## RECOVERY
 
@@ -125,11 +125,8 @@ samples, the service concludes the surface has stopped painting and releases
 the lock itself. This covers a wedged surface — it cannot cover a dead
 process.
 
-**2. Your PAM password.** Type it on the play surface and press Enter — there
-is no visible field, keystrokes accumulate invisibly and Enter submits them.
-Nothing you type is painted (see above), but treat this as a recovery route
-rather than a habit: a lock screen that accepts your account password in an
-unlabelled buffer is not a pattern to lean on.
+**2. Your PAM password**, typed on the play surface followed by Enter. Nothing
+you type is displayed — see [`docs/security.md`](docs/security.md).
 
 **3. IPC unlock, from another machine or an SSH session:**
 
