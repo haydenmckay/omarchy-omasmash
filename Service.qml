@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pam
 import Quickshell.Wayland
+import "Match.js" as Match
 
 // Omasmash -- a lock screen that plays instead of asking for a password.
 //
@@ -162,17 +163,10 @@ Item {
     }
   }
 
-  // Longest suffix of the buffer that is also a prefix of the passphrase.
   // Case-insensitive: a parent reaching over a toddler should not be defeated
   // by caps lock. The buffer itself stays raw, because PAM needs it verbatim.
   function computeMatch() {
-    var pass = passphrase.toLowerCase()
-    var buf = keyBuffer.toLowerCase()
-    var max = Math.min(pass.length, buf.length)
-    for (var k = max; k > 0; k--) {
-      if (buf.slice(-k) === pass.slice(0, k)) return k
-    }
-    return 0
+    return Match.progress(keyBuffer, passphrase)
   }
 
   // Enter submits whatever has accumulated to PAM. This gives a real password

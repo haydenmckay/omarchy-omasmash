@@ -48,6 +48,10 @@ FocusScope {
   signal keyTyped(string text)
   signal submitRequested()
   signal cornerHeld()
+  // Escape is always consumed -- nothing on a lock screen should act on it --
+  // but it is reported so the dev previews, which are ordinary windows and do
+  // need a way out, can quit on it.
+  signal escapePressed()
 
   // Render-loop canary for the service watchdog. An animation only advances
   // when frames are actually being produced, so this freezing is a truthful
@@ -300,6 +304,11 @@ FocusScope {
         return
       }
 
+      if (event.key === Qt.Key_Escape) {
+        root.escapePressed()
+        return
+      }
+
       var label = event.text
       // Control characters and modifier-only presses have no glyph. Still
       // reward them with a splash so every key does *something* -- an
@@ -423,19 +432,37 @@ FocusScope {
   // there is nothing to gain by hiding the passphrase, and a parent holding a
   // squirming child should not have to remember anything. Fills in as you go,
   // hangman style.
+  // Backing plate. `muted` is not reliably legible -- in plenty of themes it
+  // sits a few percent off the background -- and the hint has to survive both
+  // an arbitrary wallpaper behind it and whatever palette the user is running.
+  // A plate in the theme's own background colour guarantees the contrast that
+  // foreground-on-background is defined to have.
+  Rectangle {
+    anchors.fill: hint
+    anchors.margins: -18
+    radius: 14
+    color: root.theme ? root.theme.background : "#1a1b26"
+    opacity: hint.opacity * 0.72
+    border.width: 1
+    border.color: root.theme ? root.theme.accent : "#7aa2f7"
+    z: hint.z - 1
+    visible: hint.opacity > 0
+  }
+
   Column {
     id: hint
     anchors.left: parent.left
     anchors.top: parent.top
-    anchors.leftMargin: 32
-    anchors.topMargin: 28
+    anchors.leftMargin: 42
+    anchors.topMargin: 38
     spacing: 10
     opacity: (root.active && !root.introPlaying) ? 1 : 0
     Behavior on opacity { NumberAnimation { duration: 450 } }
 
     Text {
       text: "type to unlock"
-      color: root.theme ? root.theme.muted : "#414868"
+      color: root.theme ? root.theme.foreground : "#a9b1d6"
+      opacity: 0.75
       font.pixelSize: 15
       font.letterSpacing: 2
     }
@@ -461,8 +488,8 @@ FocusScope {
             width: 30
             color: parent.filled
                    ? (root.theme ? root.theme.accent : "#7aa2f7")
-                   : (root.theme ? root.theme.muted : "#414868")
-            opacity: parent.filled ? 1 : (parent.current ? 0.75 : 0.4)
+                   : (root.theme ? root.theme.foreground : "#a9b1d6")
+            opacity: parent.filled ? 1 : (parent.current ? 0.85 : 0.5)
             scale: parent.filled ? 1 : 0.9
             Behavior on opacity { NumberAnimation { duration: 120 } }
             Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
@@ -473,8 +500,8 @@ FocusScope {
             height: 3
             color: parent.filled
                    ? (root.theme ? root.theme.accent : "#7aa2f7")
-                   : (root.theme ? root.theme.muted : "#414868")
-            opacity: parent.filled ? 1 : 0.45
+                   : (root.theme ? root.theme.foreground : "#a9b1d6")
+            opacity: parent.filled ? 1 : 0.4
             Behavior on opacity { NumberAnimation { duration: 120 } }
           }
         }

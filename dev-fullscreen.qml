@@ -4,19 +4,15 @@ import QtQuick
 
 // Fullscreen visual preview -- the real thing's proportions without the lock.
 //
-// A layer-shell overlay covering the whole output, so the intro and the play
-// surface can be judged at the size they will actually run at. Keyboard focus
-// is OnDemand, NOT Exclusive: click in to type, and Escape always quits.
-//
-// That restraint is deliberate. Exclusive focus here would grab the keyboard
-// of the real session with no compositor lock behind it and no watchdog, which
-// is a worse failure than anything the lock path can do -- there would be no
-// way to type the command to kill it. True input exclusivity belongs to the
-// session lock, where it is contained and recoverable. Test that through
+// Keyboard focus is OnDemand, NOT Exclusive: click in to type, Escape quits.
+// That restraint is deliberate. Exclusive focus here would grab the real
+// session's keyboard with no compositor lock behind it and no watchdog, which
+// is a worse failure than anything the lock path can produce -- there would be
+// no way to type the command to kill it. True input exclusivity belongs to the
+// session lock, where it is contained and recoverable; test that through
 // dev-shell.qml in the nested compositor.
 ShellRoot {
   PanelWindow {
-    id: win
     anchors { top: true; bottom: true; left: true; right: true }
     color: theme.background
     exclusionMode: ExclusionMode.Ignore
@@ -26,21 +22,23 @@ ShellRoot {
 
     Theme { id: theme }
 
-    PlayView {
+    PreviewSurface {
       anchors.fill: parent
       theme: theme
-      active: true
-      Keys.onEscapePressed: Qt.quit()
+      // Nothing to unlock, so completing the passphrase just leaves. It is
+      // still the honest test: if the hint filled and this fired, the real
+      // unlock would have fired too.
+      onCompleted: Qt.quit()
     }
 
     Text {
       anchors.bottom: parent.bottom
       anchors.right: parent.right
       anchors.margins: 18
-      text: "preview — Escape to quit"
-      color: theme.muted
+      text: "preview — type the passphrase, or Escape, to quit"
+      color: theme.foreground
+      opacity: 0.6
       font.pixelSize: 13
-      opacity: 0.7
     }
   }
 }
