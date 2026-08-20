@@ -1,0 +1,20 @@
+#!/bin/bash
+# Toggle smash mode. This is the command a hotkey should be bound to.
+#
+# Deliberately a toggle rather than a plain lock: the same chord that starts
+# it also gets you out, which matters when the person reaching for the
+# keyboard has a child on one arm.
+#
+# NOTE: no keybinding is installed by this project. Binding a chord that locks
+# the session is the user's decision to make in their own config -- see
+# docs/hotkey.md. Omarchy's own config is never written to by this repo.
+
+set -uo pipefail
+
+PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [[ "$("$PROJECT/bin/omasmash" locked 2>/dev/null)" == "true" ]]; then
+  exec "$PROJECT/bin/omasmash" unlock
+else
+  exec "$PROJECT/bin/omasmash" lock
+fi

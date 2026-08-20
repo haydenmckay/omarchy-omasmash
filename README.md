@@ -42,6 +42,15 @@ drawn behind the play surface, dimmed, so it still reads as *your* desktop.
 Switch themes and it follows — the palette is re-read when
 `current/theme.name` changes.
 
+## Starting it
+
+`bin/omasmash-toggle` is the command to bind a hotkey to — it locks if
+unlocked and unlocks if locked, so one chord does both.
+
+**No keybinding is installed by this project.** Binding a chord that locks
+your session is your call; see [`docs/hotkey.md`](docs/hotkey.md) for the
+suggested bind and how to pick a chord a toddler cannot reach.
+
 ## Unlocking
 
 Three ways out, in order of everyday usefulness:
@@ -63,6 +72,25 @@ stops you from doing damage while you smash. It does not stop a person with
 physical access to your machine, and it is not a substitute for
 `omarchy.lock`. Do not walk away from an unattended machine
 with only Omasmash up and consider it locked.
+
+## Hotkeys are blocked too
+
+`ext-session-lock-v1` stops input reaching other *clients*, but Hyprland
+resolves its own keybinds before delivery — so without more work `SUPER+Q`
+and `SUPER+SHIFT+E` still fire through a lock screen, and a toddler can close
+windows or kill your session through it.
+
+Omasmash puts Hyprland into a **submap** while active, which makes every other
+bind on the system inert. The submap carries exactly one chord:
+
+```
+SUPER + CTRL + ALT + SHIFT + Escape     # restores keybinds, then unlocks
+```
+
+Deliberately awkward, because it must never be reachable by a palm on the
+keyboard — and because a process that dies holding the submap would otherwise
+leave you a desktop with no shortcuts at all. The service also clears the
+submap unconditionally on startup, since nothing else on the system will.
 
 ## RECOVERY
 
@@ -137,11 +165,17 @@ here cannot take your bar down with it, and restarts take about a second
 instead of bouncing the whole shell.
 
 ```bash
-bin/omasmash run       # run it (does NOT lock on its own)
-bin/omasmash status    # JSON: lock state, theme, watchdog, PAM
+bin/omasmash preview   # windowed visual preview -- no lock, no compositor
+bin/omasmash full      # fullscreen preview -- still no lock, Escape quits
+bin/omasmash run       # the real service (does NOT lock on its own)
 bin/omasmash lock      # lock
 bin/omasmash unlock    # release
+bin/omasmash status    # JSON: lock state, theme, watchdog, hotkeys, PAM
 ```
+
+Use the previews for anything visual — they hot-reload and cannot lock you
+out. The nested compositor is only needed for changes to the lock lifecycle
+itself.
 
 **Run every lock, crash, and `kill -9` test inside the nested compositor**,
 where a stranded lock strands a window instead of your machine:

@@ -19,7 +19,10 @@ ShellRoot {
     PreviewSurface {
       anchors.fill: parent
       theme: theme
-      onCompleted: console.log("omasmash preview: passphrase complete -> would unlock")
+      // Completing the passphrase ends the preview, the same way it ends the
+      // lock. Leaving the window open after a successful unlock would be the
+      // one thing the preview must not teach.
+      onCompleted: Qt.quit()
     }
   }
 }

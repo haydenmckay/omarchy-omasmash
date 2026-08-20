@@ -467,44 +467,64 @@ FocusScope {
       font.letterSpacing: 2
     }
 
-    Row {
-      spacing: 12
+    // The word fills like a gauge rather than lighting letter by letter: one
+    // dim copy of the passphrase, with a bright copy clipped to the progress
+    // fraction laid exactly on top. Both are the same Text with the same
+    // metrics, so the bright glyphs land pixel-for-pixel on the dim ones and
+    // the boundary can fall mid-letter -- which is what makes it read as
+    // filling up instead of stepping.
+    Item {
+      width: passLabel.implicitWidth
+      height: passLabel.implicitHeight
 
-      Repeater {
-        model: root.passphrase.length
+      readonly property real fraction: root.passphrase.length > 0
+                                       ? Math.min(1, root.matchProgress / root.passphrase.length)
+                                       : 0
 
-        Column {
-          spacing: 5
-          // Everything before the cursor is already typed.
-          readonly property bool filled: index < root.matchProgress
-          // The next character to type, nudged so it reads as "you are here".
-          readonly property bool current: index === root.matchProgress
+      Text {
+        id: passLabel
+        text: root.passphrase.toUpperCase()
+        font.pixelSize: 34
+        font.bold: true
+        font.letterSpacing: 8
+        color: root.theme ? root.theme.foreground : "#a9b1d6"
+        opacity: 0.32
+      }
 
-          Text {
-            text: root.passphrase.charAt(index).toUpperCase()
-            font.pixelSize: 34
-            font.bold: true
-            horizontalAlignment: Text.AlignHCenter
-            width: 30
-            color: parent.filled
-                   ? (root.theme ? root.theme.accent : "#7aa2f7")
-                   : (root.theme ? root.theme.foreground : "#a9b1d6")
-            opacity: parent.filled ? 1 : (parent.current ? 0.85 : 0.5)
-            scale: parent.filled ? 1 : 0.9
-            Behavior on opacity { NumberAnimation { duration: 120 } }
-            Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
-          }
+      Item {
+        height: parent.height
+        width: parent.width * parent.fraction
+        clip: true
+        Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-          Rectangle {
-            width: 30
-            height: 3
-            color: parent.filled
-                   ? (root.theme ? root.theme.accent : "#7aa2f7")
-                   : (root.theme ? root.theme.foreground : "#a9b1d6")
-            opacity: parent.filled ? 1 : 0.4
-            Behavior on opacity { NumberAnimation { duration: 120 } }
-          }
+        Text {
+          text: passLabel.text
+          font: passLabel.font
+          color: root.theme ? root.theme.accent : "#7aa2f7"
         }
+      }
+    }
+
+    // Matching gauge under the word.
+    Item {
+      width: passLabel.implicitWidth
+      height: 3
+
+      Rectangle {
+        anchors.fill: parent
+        radius: 1.5
+        color: root.theme ? root.theme.foreground : "#a9b1d6"
+        opacity: 0.22
+      }
+
+      Rectangle {
+        height: parent.height
+        radius: 1.5
+        width: parent.width * (root.passphrase.length > 0
+                               ? Math.min(1, root.matchProgress / root.passphrase.length)
+                               : 0)
+        color: root.theme ? root.theme.accent : "#7aa2f7"
+        Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
       }
     }
   }
