@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "trigz.omababy",
+  "name": "OmaBaby",
+  "version": "0.1.0",
+  "author": "trigz",
+  "license": "MIT",
+  "description": "A toddler-safe play surface: a lock screen that plays instead of asking for a password.",
+  "kinds": [
+    "service"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}

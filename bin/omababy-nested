@@ -1,0 +1,32 @@
+#!/bin/bash
+# Launch the nested Hyprland test compositor with OmaBaby running inside it.
+#
+# Containment, not convenience. A session lock taken in here is held by the
+# nested compositor, so the worst case is a stuck window you can kill from the
+# host -- see `omababy-nested --kill`. Never run the crash and kill -9 tests
+# against the real session.
+
+set -euo pipefail
+
+PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONF="${XDG_RUNTIME_DIR:-/tmp}/omababy-nested.conf"
+
+if [[ "${1:-}" == "--kill" ]]; then
+  pkill -f "Hyprland -c $CONF" && echo "nested compositor killed" || echo "no nested compositor running"
+  exit 0
+fi
+
+if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+  echo "error: no WAYLAND_DISPLAY -- run this from inside your Wayland session." >&2
+  exit 1
+fi
+
+sed "s|__PROJECT__|$PROJECT|g" "$PROJECT/dev/nested.conf" > "$CONF"
+
+echo "Starting nested Hyprland. Inside it:"
+echo "  SUPER+T          open a terminal"
+echo "  SUPER+SHIFT+E    exit the nested session"
+echo "From the host, if it ever wedges:  $0 --kill"
+echo
+
+exec Hyprland -c "$CONF"
