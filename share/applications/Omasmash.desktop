@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Omasmash
+GenericName=Safe keyboard smash
+Comment=Smash the keyboard safely. Every key paints your theme; the machine stays untouchable.
+Exec=omasmash-toggle
+Icon=omasmash
+Terminal=false
+Type=Application
+Categories=Utility;Amusement;
+Keywords=smash;baby;toddler;kids;child;lock;stress;play;
+StartupNotify=true

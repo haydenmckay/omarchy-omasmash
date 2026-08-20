@@ -409,21 +409,25 @@ FocusScope {
     anchors.fill: parent
   }
 
-  // Full-frame flash at the moment of impact. Painted in the theme's own
-  // foreground so it reads as the surface being lit, not a white frame
-  // spliced in from somewhere else.
+  // Full-frame flash at the moment of impact.
+  //
+  // Short, bright, and deliberately not opaque. The first version peaked at
+  // 0.85 in `foreground`, which on a dark theme is a mid-tone -- so instead of
+  // a punch it laid a coloured veil over the frame for half a second and
+  // desaturated the whole impact. A flash should be over before you can name
+  // its colour: hit fast, peak below half, get out.
   Rectangle {
     id: flash
     anchors.fill: parent
-    color: root.theme ? root.theme.foreground : "#ffffff"
+    color: root.theme ? root.theme.flash : "#ffffff"
     opacity: 0
 
     function fire() { flashAnim.restart() }
 
     SequentialAnimation {
       id: flashAnim
-      NumberAnimation { target: flash; property: "opacity"; from: 0; to: 0.85; duration: 70 }
-      NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 420; easing.type: Easing.OutCubic }
+      NumberAnimation { target: flash; property: "opacity"; from: 0; to: 0.45; duration: 40 }
+      NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 190; easing.type: Easing.OutCubic }
     }
   }
 

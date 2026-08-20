@@ -29,6 +29,11 @@ QtObject {
   property color accent: "#7aa2f7"
   property color muted: "#414868"
 
+  // Brightest tone the theme ships, for the impact flash. `foreground` is the
+  // reading colour, not the brightest -- on a dark theme it is a mid-grey or
+  // lavender, and a flash painted in it veils the frame instead of hitting it.
+  property color bright: "#c0caf5"
+
   // Every non-background, non-neutral colour the theme defines, in file order.
   // This is what letters and splashes are painted with.
   property var crayons: ["#f7768e", "#e0af68", "#9ece6a", "#7aa2f7", "#ad8ee6"]
@@ -51,6 +56,11 @@ QtObject {
   function randomCrayon() {
     return crayon(Math.floor(Math.random() * 1000))
   }
+
+  // A flash has to go *away* from the canvas. On a dark theme that means
+  // towards white; on a light one the same gesture has to go dark, or there is
+  // nothing to see.
+  readonly property color flash: mode === "light" ? foreground : bright
 
   // Keys that describe the canvas rather than the paint. Excluded from crayons
   // so letters never come out background-on-background and vanish.
@@ -83,6 +93,7 @@ QtObject {
       if (key === "foreground") { root.foreground = value; continue }
       if (key === "accent") { root.accent = value; continue }
       if (key === "muted") { root.muted = value; continue }
+      if (key === "bright_foreground") { root.bright = value; continue }
 
       if (root.structuralKeys[key]) continue
       if (value.charAt(0) !== "#") continue

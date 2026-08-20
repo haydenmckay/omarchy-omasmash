@@ -1,0 +1,83 @@
+#!/bin/bash
+# Capture stills and a demo GIF of the play surface.
+#
+# Runs the self-driving demo harness in a window and grabs that window's
+# region -- never the whole screen, so nothing of the operator's desktop ends
+# up in a published asset.
+#
+# Frames come from grim in a loop rather than a screen recorder, because
+# wf-recorder is not a dependency worth adding for an asset built this rarely.
+
+set -euo pipefail
+
+PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OUT="$PROJECT/docs/media"
+FPS=10
+SECONDS_TO_CAPTURE=${1:-9}
+
+command -v grim >/dev/null || { echo "grim required" >&2; exit 1; }
+command -v ffmpeg >/dev/null || { echo "ffmpeg required" >&2; exit 1; }
+
+mkdir -p "$OUT"
+FRAMES=$(mktemp -d)
+# The palette must NOT live in the frames directory: the second pass globs
+# that directory, and a palette image mixed in as a differently-sized frame
+# makes ffmpeg fail with "Internal bug, should not have happened".
+PALETTE=$(mktemp -d)/palette.png
+trap 'rm -rf "$FRAMES"' EXIT
+
+echo "starting demo harness..."
+QSLOG=$(mktemp)
+quickshell -p "$PROJECT/dev-demo.qml" >"$QSLOG" 2>&1 &
+QS=$!
+trap 'kill $QS 2>/dev/null; rm -rf "$FRAMES" "$QSLOG"' EXIT
+
+# The harness covers the whole output, so capture the output by name. No
+# window geometry to chase, and nothing of the operator's desktop is visible
+# to leak into a published asset.
+OUTPUT=$(hyprctl -j monitors | jq -r '.[] | select(.focused==true) | .name')
+[[ -n "$OUTPUT" ]] || { echo "no focused output" >&2; exit 1; }
+# Wait for the shell to actually report itself loaded rather than guessing
+# with a sleep. Blind pre-rolls either miss the warp or leave the overlay
+# sitting on the operator's screen doing nothing, which looks like a hang.
+for _ in $(seq 1 40); do
+  grep -qa "Configuration Loaded" "$QSLOG" 2>/dev/null && break
+  sleep 0.25
+done
+echo "capturing output: $OUTPUT"
+
+# Frames are grabbed as PPM, not PNG. grim spends ~700ms per frame encoding a
+# 1920x1080 PNG and only ~57ms writing the raw pixels, so PNG capped the loop
+# at about 1.4fps -- the capture ran minutes long and every frame after the
+# first second was the same settled surface. Do NOT add -s scaling either: it
+# is software-scaled and lands back at ~275ms/frame. Encode once, at the end.
+total=$((SECONDS_TO_CAPTURE * FPS))
+# Fixed 3-digit names: `seq -w` widths itself to the total, which silently
+# stops matching the printf below when the frame count changes.
+for i in $(seq 1 "$total"); do
+  grim -t ppm -o "$OUTPUT" "$FRAMES/$(printf 'f%03d' "$i").ppm" 2>/dev/null || true
+  sleep 0.04
+done
+
+echo "assembling..."
+# Two-pass palette: a single global palette smears the theme's colours.
+ffmpeg -y -loglevel error -framerate "$FPS" -pattern_type glob -i "$FRAMES/*.ppm" \
+  -vf "scale=900:-2:flags=lanczos,palettegen=stats_mode=diff" "$PALETTE"
+ffmpeg -y -loglevel error -framerate "$FPS" -pattern_type glob -i "$FRAMES/*.ppm" -i "$PALETTE" \
+  -lavfi "scale=900:-2:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=3" \
+  "$OUT/omasmash-demo.gif"
+
+# Stills worth keeping: mid-warp, the impact, and the settled surface.
+# Timeline from the first captured frame: ~1s pre-roll, 4.6s warp, impact,
+# then the play surface. Picked as fractions so changing FPS or duration keeps
+# the stills pointing at the same moments.
+still() {
+  local frame="$FRAMES/f$(printf '%03d' "$1").ppm"
+  [[ -f $frame ]] && magick "$frame" "$OUT/$2"
+}
+still $((total * 30 / 100)) 01-warp.png
+still $((total * 52 / 100)) 02-impact.png
+still $((total * 88 / 100)) 03-play.png
+
+echo "wrote:"
+ls -la "$OUT"

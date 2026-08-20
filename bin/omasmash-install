@@ -1,0 +1,39 @@
+#!/bin/bash
+# Put Omasmash in the SUPER menu.
+#
+# Installs a desktop entry and icon into the user's own XDG directories, and
+# links the CLI onto PATH so the entry's Exec= resolves. Nothing here touches
+# Hyprland config -- binding a hotkey stays the user's decision, see
+# docs/hotkey.md.
+#
+# Not a webapp: omarchy-webapp-install wraps a URL in a browser window, and
+# Omasmash is a Wayland session-lock client with no URL to wrap. The launcher
+# entry is the part that matters -- it is what makes it searchable in the menu.
+
+set -euo pipefail
+
+PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APPS="$HOME/.local/share/applications"
+ICONS="$HOME/.local/share/icons/hicolor/256x256/apps"
+BIN="$HOME/.local/bin"
+
+mkdir -p "$APPS" "$ICONS" "$BIN"
+
+install -m 0644 "$PROJECT/share/icons/omasmash.png" "$ICONS/omasmash.png"
+install -m 0644 "$PROJECT/share/applications/Omasmash.desktop" "$APPS/Omasmash.desktop"
+
+for cmd in omasmash omasmash-toggle omasmash-panic; do
+  ln -sf "$PROJECT/bin/$cmd" "$BIN/$cmd"
+done
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$APPS" >/dev/null 2>&1 || true
+fi
+
+echo "Installed:"
+echo "  $APPS/Omasmash.desktop"
+echo "  $ICONS/omasmash.png"
+echo "  $BIN/{omasmash,omasmash-toggle,omasmash-panic}"
+echo
+echo "Search 'Omasmash' in the SUPER menu."
+echo "Hotkey is not installed -- see docs/hotkey.md if you want one."

@@ -1,5 +1,7 @@
 # Omasmash
 
+![Omasmash](preview.png)
+
 Smash the keyboard safely. Every keypress paints a big letter in your active
 theme's colours, every click splashes, every drag trails — and the machine
 underneath stays untouchable.
@@ -30,6 +32,13 @@ on the system receives keyboard or pointer input. No Escape, no Alt-Tab, no
 alt-clicking the window away.
 
 So: **Omasmash is a lock screen that plays instead of asking for a password.**
+
+## What it looks like
+
+![demo](docs/media/omasmash-demo.gif)
+
+It opens by flying the camera through a corridor of letters, hits, and drops
+you into the play surface. Everything is painted from your active theme.
 
 ## Theming
 
@@ -157,6 +166,20 @@ See `docs/premise-test.md` for the full reproduction.
 
 Both are live against the session-lock path Omasmash is built on, and both are
 part of the premise test's acceptance criteria.
+
+## Installing
+
+```bash
+bin/omasmash-install
+```
+
+Puts a desktop entry and icon in your XDG directories and links the CLI onto
+PATH, so **Omasmash** is searchable in the SUPER menu. It is not a webapp —
+`omarchy-webapp-install` wraps a URL in a browser window, and this is a
+Wayland session-lock client with no URL to wrap; the launcher entry is the
+part that matters.
+
+No hotkey is installed. See [`docs/hotkey.md`](docs/hotkey.md).
 
 ## Development
 

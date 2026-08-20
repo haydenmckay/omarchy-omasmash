@@ -45,6 +45,19 @@ design decision follows from that. Before touching the lock path:
   to adopt a stranded lock is killed by a fatal Wayland protocol error and the
   session is locked forever. Any nested test config must mirror the real
   session's Hyprland options or it manufactures lockouts that do not exist.
+- **A PanelWindow's own properties are not in its children's scope.**
+  Quickshell reparents children into an internal content item, so a bare
+  `started` in a child resolves to nothing and fails at runtime with
+  "started is not defined". Give the window an `id` and use `win.started`.
+  qmllint does not catch it; it shows up only as a surface that does nothing.
+- **Capture frames as PPM, never PNG.** grim spends ~700ms/frame encoding a
+  1920x1080 PNG versus ~57ms writing raw pixels, which caps a capture loop at
+  ~1.4fps -- the recording runs minutes long and every frame after the first
+  second is identical. Do not reach for `-s` scaling either: it is
+  software-scaled and lands back at ~275ms/frame. Encode once, at the end.
+- **Keep the ffmpeg palette out of the frames directory.** The second pass
+  globs that directory, and a palette image mixed in as a differently-sized
+  frame fails with "Internal bug, should not have happened".
 - **The watchdog canary is animation-driven, not timer-driven.** Animations
   only advance when frames are produced, so a frozen canary truthfully means
   "not painting". A Timer keeps ticking on a surface that renders nothing.
