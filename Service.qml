@@ -247,20 +247,9 @@ Item {
   readonly property string panicScript: pluginDir + "/bin/omasmash-panic"
   readonly property string panicBind: "SUPER CTRL ALT SHIFT, Escape, exec, " + panicScript
 
-  // `hyprctl keyword bind` appends, so re-registering on every lock grows the
-  // submap without bound. Register once per process, then just switch into it.
-  property bool submapRegistered: false
-
   function blockHotkeys() {
     if (hotkeysBlocked) return
-    if (!submapRegistered) {
-      submapEnter.running = true
-      submapRegistered = true
-    } else {
-      submapActivate.running = true
-    }
-    hotkeysBlocked = true
-    logEvent("hotkeys-blocked")
+    if (!submapEnter.running) submapEnter.running = true
   }
 
   function releaseHotkeys() {
@@ -269,23 +258,54 @@ Item {
     hotkeysBlocked = false
   }
 
+  // Registers the submap and switches into it, then reports back which submap
+  // the compositor actually ended up in.
+  //
+  // Two parsers exist in the wild and they need different calls. Omarchy's own
+  // config is Lua, where `hyprctl keyword` refuses outright -- "keyword can't
+  // work with non-legacy parsers" -- while still exiting 0, and
+  // `dispatch submap <name>` is a Lua syntax error. The legacy `.conf` parser
+  // wants exactly those two. So: try Lua, fall back to legacy.
+  //
+  // The echo at the end is the point. The first version set hotkeysBlocked
+  // from a fire-and-forget Process and reported success on a real Omarchy
+  // session where nothing had happened at all.
   Process {
     id: submapEnter
     command: ["bash", "-c",
-      "hyprctl keyword submap omasmash; " +
-      "hyprctl keyword bind '" + root.panicBind + "'; " +
-      "hyprctl keyword submap reset; " +
-      "hyprctl dispatch submap omasmash"]
-  }
+      "set +e; " +
+      "hyprctl eval 'hl.define_submap([[omasmash]], function() " +
+        "hl.bind([[SUPER + CTRL + ALT + SHIFT + Escape]], " +
+        "hl.dsp.exec_cmd([[" + root.panicScript + "]]), " +
+        "{ description = [[Omasmash panic unlock]] }) end)' >/dev/null 2>&1; " +
+      "hyprctl dispatch 'hl.dsp.submap([[omasmash]])' >/dev/null 2>&1; " +
+      "if [ \"$(hyprctl submap 2>/dev/null)\" != omasmash ]; then " +
+        "hyprctl keyword submap omasmash >/dev/null 2>&1; " +
+        "hyprctl keyword bind '" + root.panicBind + "' >/dev/null 2>&1; " +
+        "hyprctl keyword submap reset >/dev/null 2>&1; " +
+        "hyprctl dispatch submap omasmash >/dev/null 2>&1; " +
+      "fi; " +
+      "hyprctl submap 2>/dev/null"]
 
-  Process {
-    id: submapActivate
-    command: ["hyprctl", "dispatch", "submap", "omasmash"]
+    stdout: StdioCollector {
+      id: submapEnterOut
+      waitForEnd: true
+      onStreamFinished: {
+        var active = String(text || "").trim()
+        root.hotkeysBlocked = (active === "omasmash")
+        root.logEvent(root.hotkeysBlocked
+          ? "hotkeys-blocked"
+          : "hotkeys-NOT-blocked: compositor submap is '" + active + "'")
+      }
+    }
   }
 
   Process {
     id: submapReset
-    command: ["hyprctl", "dispatch", "submap", "reset"]
+    command: ["bash", "-c",
+      "hyprctl dispatch 'hl.dsp.submap([[reset]])' >/dev/null 2>&1 || true; " +
+      "[ \"$(hyprctl submap 2>/dev/null)\" = default ] || " +
+        "hyprctl dispatch submap reset >/dev/null 2>&1 || true"]
   }
 
   // ---- SAFETY --------------------------------------------------------
