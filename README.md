@@ -192,19 +192,70 @@ See `docs/premise-test.md` for the full reproduction.
 Both are live against the session-lock path Omasmash is built on, and both are
 part of the premise test's acceptance criteria.
 
+## Requirements and what this plugin touches
+
+Everything here ships with Omarchy — there is nothing extra to install.
+
+| Used | For |
+|---|---|
+| `hyprctl` | Registering and switching the keybind submap, and reading it back |
+| `omarchy-shell` | The toggle and panic scripts reach the service over shell IPC |
+| `omarchy-hyprland-session-locked` | Detecting a stranded lock left by a dead client |
+| `bash` | The scripts in `bin/` |
+| PAM (`/etc/pam.d/omarchy-lock-password`) | The password unlock route, shared with Omarchy's own lock screen |
+
+**Privilege boundaries, stated plainly**, because nothing downstream checks
+them for you:
+
+- **It takes a real session lock.** While active, the compositor gives it
+  exclusive input and will keep the screen locked if this process dies. See
+  [RECOVERY](#recovery) before first use.
+- **It changes your global keybinds.** While active it puts Hyprland into a
+  submap, which makes every other keybind on your system inert until it
+  releases. It clears the submap on unlock and again on startup.
+- **It authenticates against PAM**, using Omarchy's existing
+  `omarchy-lock-password` configuration. It does not read, store, or
+  transmit your password; keystrokes go to PAM and are never displayed
+  (see [`docs/security.md`](docs/security.md)).
+- **No network access. No telemetry. Nothing written outside the plugin
+  directory.**
+
+Development-only extras, not needed to run it: `grim`, `ffmpeg` and
+`imagemagick` for `bin/omasmash-capture`, and a nested `Hyprland` for
+`bin/omasmash-nested`.
+
 ## Installing
 
 ```bash
-bin/omasmash-install
+omarchy plugin add https://github.com/haydenmckay/omarchy-omasmash --enable
+omarchy-restart-shell
 ```
 
-Puts a desktop entry and icon in your XDG directories and links the CLI onto
-PATH, so **Omasmash** is searchable in the SUPER menu. It is not a webapp —
-`omarchy-webapp-install` wraps a URL in a browser window, and this is a
-Wayland session-lock client with no URL to wrap; the launcher entry is the
-part that matters.
+The restart is not optional: the Omarchy shell runs with its file watcher
+disabled, so it will not pick up a newly installed or updated plugin until it
+restarts.
 
-No hotkey is installed. See [`docs/hotkey.md`](docs/hotkey.md).
+Optionally, to make **Omasmash** searchable in the SUPER menu and put the CLI
+on your PATH:
+
+```bash
+~/.config/omarchy/plugins/io.github.haydenmckay.omasmash/bin/omasmash-install
+```
+
+No hotkey is installed — binding a chord that locks your session is your
+decision. See [`docs/hotkey.md`](docs/hotkey.md).
+
+### Removing
+
+```bash
+omarchy plugin remove io.github.haydenmckay.omasmash
+omarchy-restart-shell
+```
+
+If you ran `omasmash-install`, also remove
+`~/.local/share/applications/Omasmash.desktop`,
+`~/.local/share/icons/hicolor/256x256/apps/omasmash.png` and the
+`omasmash*` symlinks in `~/.local/bin`.
 
 ## Development
 
