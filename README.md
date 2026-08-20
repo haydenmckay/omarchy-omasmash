@@ -142,7 +142,14 @@ you type is displayed — see [`docs/security.md`](docs/security.md).
 Works whenever the process is alive and answering, including when the screen
 is showing nothing useful.
 
-**4. The TTY escape.** If the process is dead and the compositor is still
+**4. `hl.clear_crashed_lockscreen`.** Hyprland can be told to drop a lock
+whose client has died, without a TTY:
+
+```bash
+hyprctl dispatch 'hl.clear_crashed_lockscreen()'
+```
+
+**5. The TTY escape.** If the process is dead and the compositor is still
 holding the lock:
 
 ```

@@ -66,6 +66,29 @@ design decision follows from that. Before touching the lock path:
 - **Hot-reload leaves a stale surface while a lock is held.** IPC picks up
   the new code but the lock surface does not. Kill and restart the instance
   when changing anything inside `WlSessionLockSurface`.
+- **Omarchy configures Hyprland in Lua; most `hyprctl` recipes online are
+  legacy-parser.** `hyprctl keyword ...` refuses on a Lua config ("keyword
+  can't work with non-legacy parsers") **while still exiting 0**, and
+  `hyprctl dispatch <name> <args>` is parsed as Lua, so `dispatch submap x`
+  is a syntax error. Use `hyprctl eval 'hl.…'` and
+  `hyprctl dispatch 'hl.dsp.…([[arg]])'`. Enumerate the API with
+  `hl.define_submap`, `hl.bind`, `hl.dsp.*` — `hyprctl eval` swallows return
+  values, so route introspection out through
+  `hl.dispatch(hl.dsp.exec_cmd("… > /tmp/out"))`.
+- **`dev/nested.conf` uses the legacy parser, the real session uses Lua.**
+  The harness therefore cannot prove anything about `hyprctl` calls. Hotkey
+  blocking passed nested and did nothing at all on a real session. Verify
+  compositor-facing behaviour against a real Omarchy install, every time.
+- **Never set state from a fire-and-forget `Process`.** `hotkeysBlocked` was
+  assigned right after launching the command and reported success on a
+  session where nothing happened. Read the result back and report what is
+  true.
+- **The shell never hot-reloads plugins.** `omarchy-launch-shell` sets
+  `QS_DISABLE_FILE_WATCHER=1` deliberately. `omarchy plugin update`,
+  `rescanPlugins`, and disable/enable all leave the old code running — only
+  `omarchy-restart-shell` picks up changes.
+- **`hl.clear_crashed_lockscreen` exists** and is worth knowing about for
+  stranded-lock recovery on a Lua-configured Hyprland.
 - **The watchdog canary is animation-driven, not timer-driven.** Animations
   only advance when frames are produced, so a frozen canary truthfully means
   "not painting". A Timer keeps ticking on a surface that renders nothing.
