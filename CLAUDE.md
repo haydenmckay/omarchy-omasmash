@@ -1,4 +1,4 @@
-# CLAUDE.md — OmaBaby
+# CLAUDE.md — Omasmash
 
 Toddler-safe play surface for Omarchy. **A lock screen that plays instead of
 asking for a password.** Read `README.md` first; read `docs/issue-drafts.md`
@@ -10,7 +10,7 @@ This is built on `ext-session-lock-v1`. The compositor enforces input
 exclusivity, and **it keeps the screen locked if the client dies.** Every
 design decision follows from that. Before touching the lock path:
 
-- Test in the nested compositor (`bin/omababy-nested`), never the real
+- Test in the nested compositor (`bin/omasmash-nested`), never the real
   session. A stranded lock in there strands a window.
 - Confirm the TTY escape works on this machine first (`README.md` → RECOVERY).
 - Never remove the paint watchdog in `Service.qml` without a replacement.
@@ -24,7 +24,7 @@ design decision follows from that. Before touching the lock path:
 | `Theme.qml` | Live palette + wallpaper from the active Omarchy theme. |
 | `dev-shell.qml` | Standalone harness. Must stay at the project root. |
 | `dev/nested.conf` | Nested Hyprland config for lock testing. |
-| `bin/omababy` | Control CLI (`run`/`lock`/`unlock`/`status`). |
+| `bin/omasmash` | Control CLI (`run`/`lock`/`unlock`/`status`). |
 
 ## Gotchas already paid for
 
@@ -52,8 +52,8 @@ design decision follows from that. Before touching the lock path:
 ## Development loop
 
 ```bash
-bin/omababy run        # standalone; does not lock on its own
-bin/omababy status     # JSON state
+bin/omasmash run        # standalone; does not lock on its own
+bin/omasmash status     # JSON state
 qmllint *.qml          # must stay clean
 ```
 

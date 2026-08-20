@@ -1,15 +1,15 @@
 #!/bin/bash
-# Launch the nested Hyprland test compositor with OmaBaby running inside it.
+# Launch the nested Hyprland test compositor with Omasmash running inside it.
 #
 # Containment, not convenience. A session lock taken in here is held by the
 # nested compositor, so the worst case is a stuck window you can kill from the
-# host -- see `omababy-nested --kill`. Never run the crash and kill -9 tests
+# host -- see `omasmash-nested --kill`. Never run the crash and kill -9 tests
 # against the real session.
 
 set -euo pipefail
 
 PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONF="${XDG_RUNTIME_DIR:-/tmp}/omababy-nested.conf"
+CONF="${XDG_RUNTIME_DIR:-/tmp}/omasmash-nested.conf"
 
 if [[ "${1:-}" == "--kill" ]]; then
   pkill -f "Hyprland -c $CONF" && echo "nested compositor killed" || echo "no nested compositor running"

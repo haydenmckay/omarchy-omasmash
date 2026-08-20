@@ -4,7 +4,7 @@ import Quickshell.Io
 import Quickshell.Services.Pam
 import Quickshell.Wayland
 
-// OmaBaby -- a lock screen that plays instead of asking for a password.
+// Omasmash -- a lock screen that plays instead of asking for a password.
 //
 // The whole product rests on one property: ext-session-lock-v1 is
 // compositor-enforced input exclusivity. While locked, nothing else on the
@@ -61,7 +61,7 @@ Item {
   function logEvent(event) {
     lastEvent = event
     lastEventAt = new Date().toISOString()
-    console.log("omababy " + lastEventAt + " " + event)
+    console.log("omasmash " + lastEventAt + " " + event)
   }
 
   function realScreenCount() {
@@ -366,7 +366,7 @@ Item {
   Component.onCompleted: checkStrandedLock()
 
   IpcHandler {
-    target: "omababy"
+    target: "omasmash"
 
     function lock(): string {
       if (root.locked) return "already-locked"

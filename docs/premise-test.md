@@ -4,7 +4,7 @@
 **Verdict: PASSED.** The `ext-session-lock-v1` premise holds. Visual work is
 unblocked.
 
-Method: everything below ran inside a nested Hyprland (`bin/omababy-nested`)
+Method: everything below ran inside a nested Hyprland (`bin/omasmash-nested`)
 and was driven over IPC from the host. No synthetic input was used, and the
 host session was verified unlocked at every step.
 
@@ -37,7 +37,7 @@ That is a plausible mechanism for upstream **#6888** (*stranded-lock recovery
 never completes*), and it is worth checking against that issue before doing
 any more work on the recovery path.
 
-Two consequences for OmaBaby:
+Two consequences for Omasmash:
 
 - **The nested harness must mirror the real session's Hyprland options**, or
   it manufactures lockouts the real environment does not have. `nested.conf`

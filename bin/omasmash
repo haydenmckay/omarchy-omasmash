@@ -1,5 +1,5 @@
 #!/bin/bash
-# OmaBaby control CLI (development / standalone mode).
+# Omasmash control CLI (development / standalone mode).
 #
 # `unlock` is the escape hatch that does not need a TTY. It works as long as
 # the process is alive and its IPC socket is answering -- which covers a
@@ -13,12 +13,12 @@ CONFIG="$PROJECT/dev-shell.qml"
 
 case "${1:-status}" in
   run)     exec quickshell -p "$CONFIG" ;;
-  lock)    quickshell -p "$CONFIG" ipc call omababy lock ;;
-  unlock)  quickshell -p "$CONFIG" ipc call omababy unlock ;;
-  locked)  quickshell -p "$CONFIG" ipc call omababy isLocked ;;
-  status)  quickshell -p "$CONFIG" ipc call omababy status | (command -v jq >/dev/null && jq . || cat) ;;
+  lock)    quickshell -p "$CONFIG" ipc call omasmash lock ;;
+  unlock)  quickshell -p "$CONFIG" ipc call omasmash unlock ;;
+  locked)  quickshell -p "$CONFIG" ipc call omasmash isLocked ;;
+  status)  quickshell -p "$CONFIG" ipc call omasmash status | (command -v jq >/dev/null && jq . || cat) ;;
   *)
-    echo "usage: omababy {run|lock|unlock|locked|status}" >&2
+    echo "usage: omasmash {run|lock|unlock|locked|status}" >&2
     exit 1
     ;;
 esac

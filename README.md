@@ -1,32 +1,39 @@
-# OmaBaby
+# Omasmash
 
-A toddler-safe play surface for [Omarchy](https://omarchy.org).
+Smash the keyboard safely. Every keypress paints a big letter in your active
+theme's colours, every click splashes, every drag trails — and the machine
+underneath stays untouchable.
 
-Toggle it on and the keyboard becomes a toy: every keypress paints a big
-letter in your active theme's colours, every click splashes, every drag
-trails. Meanwhile the machine is untouchable.
+Two reasons people run it:
 
-> **Status: pre-alpha.** The session-lock premise test has not been signed off
-> yet. Do not run this on a machine you care about being able to get back into.
-> Read [RECOVERY](#recovery) first — all of it.
+- **You have a small child** who grabs the keyboard whenever you're at the
+  machine, and lately has opinions about your agents.
+- **You need to get some frustration out** and would rather not do it into a
+  Slack thread.
+
+> **Status: pre-alpha.** The session-lock premise test passes
+> (`docs/premise-test.md`), but the passphrase and corner-hold unlock paths
+> have not been tested with real input yet. Read [RECOVERY](#recovery) before
+> you run it — all of it.
 
 ## Why this isn't a web page
 
-The existing toddler-smash toys are browser based, and **a browser tab cannot
-hold the input.** Escape, or any of a dozen key combos, drops fullscreen and
-your toddler is now in your email.
+The existing smash toys are browser based, and **a browser tab cannot hold the
+input.** Escape, or any of a dozen key combos, drops fullscreen — and now the
+keyboard is pointed at your email. Even BabySmash, the 2008 Windows original,
+could only block input on a best-effort basis from inside a normal app.
 
-OmaBaby is built on `ext-session-lock-v1`, the Wayland session-lock protocol —
+Omasmash is built on `ext-session-lock-v1`, the Wayland session-lock protocol —
 the same mechanism behind Omarchy's real lock screen. Input exclusivity is
 enforced by the compositor, not by a focus grab. While it is up, nothing else
 on the system receives keyboard or pointer input. No Escape, no Alt-Tab, no
 alt-clicking the window away.
 
-So: **OmaBaby is a lock screen that plays instead of asking for a password.**
+So: **Omasmash is a lock screen that plays instead of asking for a password.**
 
 ## Theming
 
-Colours come from your active theme, live. OmaBaby reads
+Colours come from your active theme, live. Omasmash reads
 `~/.local/state/omarchy/current/theme/colors.toml` directly rather than going
 through the shell's `Color` singleton, because that singleton only exposes
 five roles and a play surface wants the whole crayon box. Your wallpaper is
@@ -51,10 +58,11 @@ Three ways out, in order of everyday usefulness:
 
 ## This is a child lock, not a security lock
 
-Say it plainly: the passphrase is a *known string*. It stops a toddler. It
-does not stop a person with physical access to your machine, and it is not a
-substitute for `omarchy.lock`. Do not walk away from an unattended machine
-with only OmaBaby up and consider it locked.
+Say it plainly: the passphrase is a *known string*. It stops a toddler, and it
+stops you from doing damage while you smash. It does not stop a person with
+physical access to your machine, and it is not a substitute for
+`omarchy.lock`. Do not walk away from an unattended machine
+with only Omasmash up and consider it locked.
 
 ## RECOVERY
 
@@ -73,7 +81,7 @@ process.
 **2. IPC unlock, from another machine or an SSH session:**
 
 ```bash
-~/Work/omarchy-omababy/bin/omababy unlock
+~/Work/omarchy-omasmash/bin/omasmash unlock
 ```
 
 Works whenever the process is alive and answering, including when the screen
@@ -85,7 +93,7 @@ holding the lock:
 ```
 Ctrl+Alt+F2          # switch to a text console
 <log in>
-pkill -f omababy     # or: pkill quickshell
+pkill -f omasmash     # or: pkill quickshell
 Ctrl+Alt+F1          # switch back
 ```
 
@@ -119,7 +127,7 @@ See `docs/premise-test.md` for the full reproduction.
 - Omarchy **#6888** — stranded-lock recovery never completes.
 - Omarchy **#7478** — lock screen crash-loops roughly every 18s after DPMS-off.
 
-Both are live against the session-lock path OmaBaby is built on, and both are
+Both are live against the session-lock path Omasmash is built on, and both are
 part of the premise test's acceptance criteria.
 
 ## Development
@@ -129,18 +137,18 @@ here cannot take your bar down with it, and restarts take about a second
 instead of bouncing the whole shell.
 
 ```bash
-bin/omababy run       # run it (does NOT lock on its own)
-bin/omababy status    # JSON: lock state, theme, watchdog, PAM
-bin/omababy lock      # lock
-bin/omababy unlock    # release
+bin/omasmash run       # run it (does NOT lock on its own)
+bin/omasmash status    # JSON: lock state, theme, watchdog, PAM
+bin/omasmash lock      # lock
+bin/omasmash unlock    # release
 ```
 
 **Run every lock, crash, and `kill -9` test inside the nested compositor**,
 where a stranded lock strands a window instead of your machine:
 
 ```bash
-bin/omababy-nested          # nested Hyprland with OmaBaby inside
-bin/omababy-nested --kill   # from the host, if it wedges
+bin/omasmash-nested          # nested Hyprland with Omasmash inside
+bin/omasmash-nested --kill   # from the host, if it wedges
 ```
 
 ## Licence

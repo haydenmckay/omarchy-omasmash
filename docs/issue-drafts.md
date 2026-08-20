@@ -1,6 +1,6 @@
-# OmaBaby — GitHub issue drafts
+# Omasmash — GitHub issue drafts
 
-Copy-paste each `###` section into a new issue on `trigz/omarchy-omababy`.
+Copy-paste each `###` section into a new issue on `trigz/omarchy-omasmash`.
 Body text starts under the `**Body**` line. Titles and labels are suggestions.
 
 Issue numbers referenced in the epic checklist assume these are filed in the
@@ -8,7 +8,7 @@ order listed (epic = #1). Fix the numbers after filing.
 
 ---
 
-### 1. Epic: OmaBaby — a toddler play mode built on the real session lock
+### 1. Epic: Omasmash — a toddler play mode built on the real session lock
 
 **Labels:** `epic`, `tracking`
 
@@ -17,7 +17,7 @@ order listed (epic = #1). Fix the numbers after filing.
 ````markdown
 ## What this is
 
-OmaBaby is a toddler-safe "play/lock" plugin for Omarchy. Toggle it on and every
+Omasmash is a toddler-safe "play/lock" plugin for Omarchy. Toggle it on and every
 keypress paints a big themed letter or shape with a colour burst and a sound;
 mouse clicks splash; drags leave trails. The kid gets a toy, the machine is
 untouchable.
@@ -37,7 +37,7 @@ Wayland protocol. That is *compositor-enforced input exclusivity*: while
 locked, nothing else on the system receives keyboard or pointer input. No
 Escape, no Alt-Tab, no killing the window.
 
-**Baby mode is a lock screen that plays instead of asking for a password.**
+**Smash mode is a lock screen that plays instead of asking for a password.**
 
 The second differentiator is theming: letters are painted in the *active Omarchy
 theme's own colours*, read from the theme's full palette, over the active
@@ -89,7 +89,7 @@ Nothing pretty gets built until the spike below says the premise holds.
 
 ## Naming
 
-`OmaBaby` follows the distribution's dominant "Oma-" idiom (OmaClock,
+`Omasmash` follows the distribution's dominant "Oma-" idiom (OmaClock,
 OmaConnect, Omaland, Omatop, Omasticky, OmaCapy, Omatruco). Earlier candidates:
 Playpen, Keysmash, Doodlelock. Chosen for distribution alignment; not 100%
 wedded to it — rename is cheap until the marketplace listing exists.
@@ -170,7 +170,7 @@ A written findings note in `docs/` covering:
   automatically a no-go — it moves weight onto #8 (watchdog + escape hatch) and
   onto the README being blunt about the risk.
 - If the answer is "the premise does not hold", close the epic or re-scope
-  OmaBaby to a non-lock fullscreen overlay and be honest in the README that it
+  Omasmash to a non-lock fullscreen overlay and be honest in the README that it
   is only marginally better than the browser toys.
 ````
 
@@ -252,7 +252,7 @@ what actually happens on crash and recovery.
 
 ## Acceptance criteria
 
-- [ ] A single documented entry point turns baby mode on. During standalone dev
+- [ ] A single documented entry point turns smash mode on. During standalone dev
       this can be a script in `bin/`; once installed as a plugin it should be an
       `omarchy-shell` IPC command so it can be bound to a key.
 - [ ] Lock raises reliably from a cold start and from an already-running shell.
@@ -265,7 +265,7 @@ what actually happens on crash and recovery.
 - [ ] Toggling on → off → on repeatedly is stable (no accumulating state, no
       growing memory).
 - [ ] Idle/DPMS interaction is explicitly decided and tested, given upstream
-      #7478. Options: inhibit idle while baby mode is active, or handle
+      #7478. Options: inhibit idle while smash mode is active, or handle
       DPMS-off/on cleanly. **Undecided — decide with the #2 findings in hand.**
 - [ ] The service never starts a second Quickshell process from inside an
       installed plugin.
@@ -273,9 +273,9 @@ what actually happens on crash and recovery.
 ## Notes
 
 - Interaction with the real `omarchy.lock`: what happens if the session lock
-  fires (idle timeout, manual lock) while baby mode is up is **undecided**.
+  fires (idle timeout, manual lock) while smash mode is up is **undecided**.
   Nesting two session locks is likely not possible; simplest defensible answer
-  is that baby mode inhibits the idle lock while active. Confirm in #2.
+  is that smash mode inhibits the idle lock while active. Confirm in #2.
 ````
 
 ---
@@ -342,15 +342,15 @@ not be able to reach the volume keys of.
 ## Acceptance criteria
 
 - [ ] Keypresses and clicks play a short sound.
-- [ ] **Hard volume cap** applied in-app: OmaBaby's own output cannot exceed a
+- [ ] **Hard volume cap** applied in-app: Omasmash's own output cannot exceed a
       configured ceiling regardless of the system volume level. The cap is a
       code-level clamp, not just a default setting.
 - [ ] Mute is available and reachable *while locked*, without unlocking — a
       dedicated key or gesture, documented in the README.
-- [ ] Mute state persists across toggles of baby mode.
+- [ ] Mute state persists across toggles of smash mode.
 - [ ] A rapid smash does not stack into a wall of overlapping audio: cap
       concurrent voices and/or rate-limit triggers.
-- [ ] OmaBaby's audio does not permanently change the system/session volume, and
+- [ ] Omasmash's audio does not permanently change the system/session volume, and
       restores anything it touched on unlock.
 - [ ] Missing audio device, or a device that disappears mid-session, degrades to
       silence and **never** crashes the locking client.
@@ -422,7 +422,7 @@ and which of the two corner variants, is **undecided**.
 
 - **The README must be honest that this is a child lock, not a security lock.**
   A known, default passphrase protects against a toddler, not against a person
-  with physical access. Users must never confuse OmaBaby with the session lock.
+  with physical access. Users must never confuse Omasmash with the session lock.
   Tracked in #8, restated here because it constrains how this is described in
   the UI.
 ````
@@ -438,7 +438,7 @@ and which of the two corner variants, is **undecided**.
 ````markdown
 ## Context
 
-Because OmaBaby is built on `ext-session-lock-v1`, a crash of the locking client
+Because Omasmash is built on `ext-session-lock-v1`, a crash of the locking client
 leaves the compositor **locked**. This issue covers every mitigation for that,
 plus the documentation that makes the risk legible to a user before they install
 a toy on their work machine.
@@ -475,9 +475,9 @@ Depends on #2 for what is actually achievable.
       physical access.
 - [ ] README states plainly that a crash of the client can leave the session
       locked, that this is the Wayland protocol's designed behaviour and not a
-      bug in OmaBaby, and how to recover.
+      bug in Omasmash, and how to recover.
 - [ ] Upstream #6888 and #7478 are linked with the versions they were observed
-      on, and what OmaBaby does about them.
+      on, and what Omasmash does about them.
 - [ ] "Try it in a nested Hyprland first" is the recommended first run in the
       README, with the command.
 - [ ] Per omarchyplugins.com publishing requirements, every external dependency,
@@ -518,12 +518,12 @@ toddler smashing keys is the marketing.**
       `omarchy plugin add <url>` outright), with: `schemaVersion`, `id`, `name`,
       `version` (semver, ≤64 chars), `author`, `license`, `description`,
       `kinds`, `entryPoints`.
-- [ ] Plugin ID migrated from the dev ID `trigz.omababy` to
-      `io.github.trigz.omababy`. Must not start with `omarchy.*`.
+- [ ] Plugin ID migrated from the dev ID `trigz.omasmash` to
+      `io.github.trigz.omasmash`. Must not start with `omarchy.*`.
 - [ ] Public repo with README and a licence file.
 - [ ] Validated against a **fresh clone**, not the working checkout:
       ```bash
-      git clone <repo-url> /tmp/omababy-check && omarchy plugin validate /tmp/omababy-check
+      git clone <repo-url> /tmp/omasmash-check && omarchy plugin validate /tmp/omasmash-check
       ```
 - [ ] Install *and* removal are clean: nothing left behind, and deleting the
       plugin folder does not break the shell.
@@ -542,7 +542,7 @@ toddler smashing keys is the marketing.**
 - The marketplace validates listings, not plugin security; plugins run
   unsandboxed. PAM handling and anything that shells out has to be justified in
   our own docs because nothing downstream will catch it.
-- Final name check before the ID is claimed: `OmaBaby` is chosen for alignment
+- Final name check before the ID is claimed: `Omasmash` is chosen for alignment
   with the "Oma-" idiom but is not locked in. Renaming after a listing exists is
   expensive; renaming before it is free.
 ````
