@@ -16,6 +16,21 @@ if [[ "${1:-}" == "--kill" ]]; then
   exit 0
 fi
 
+# Closing the nested window destroys the compositor's only output but leaves
+# the process running with nowhere to draw. Every later launch then looks like
+# "it isn't loading" -- the compositor is fine, there is simply no window. So
+# always clear a stale one before starting. Use --kill rather than closing the
+# window and this never arises.
+stale=$(pgrep -x Hyprland | while read -r p; do
+  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q omasmash && echo "$p"
+done)
+if [[ -n "$stale" ]]; then
+  echo "clearing stale nested compositor: $stale"
+  # shellcheck disable=SC2086
+  kill $stale 2>/dev/null
+  sleep 2
+fi
+
 if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
   echo "error: no WAYLAND_DISPLAY -- run this from inside your Wayland session." >&2
   exit 1
@@ -26,7 +41,8 @@ sed "s|__PROJECT__|$PROJECT|g" "$PROJECT/dev/nested.conf" > "$CONF"
 echo "Starting nested Hyprland. Inside it:"
 echo "  SUPER+T          open a terminal"
 echo "  SUPER+SHIFT+E    exit the nested session"
-echo "From the host, if it ever wedges:  $0 --kill"
+echo "From the host, when you are done:  $0 --kill"
+echo "(close the window and the compositor keeps running with no output)"
 echo
 
 exec Hyprland -c "$CONF"

@@ -12,6 +12,33 @@ FocusScope {
   property int cornerHoldMs: 3000
   property int cornerSize: 96
 
+  // Mirrored from the service for the unlock hint. The hint shows how far in
+  // you are, never what you have typed.
+  property string passphrase: "omarchy"
+  property int matchProgress: 0
+
+  // Warp-in: the camera flies forward through a field of letters that are
+  // themselves standing still. That distinction is the whole effect -- glyphs
+  // do not travel outward from a point, they hold a fixed spot in space and
+  // the perspective divide sweeps them off the edges as you close on them.
+  //
+  // Depth is a real projection: screen offset and scale are both focal/z, so
+  // a constant camera speed produces the 1/z rush by itself. Nothing is eased
+  // to fake acceleration.
+  property bool introPlaying: false
+  property int introGlyphs: 190
+  property int introMs: 4600
+
+  // Camera position along z. Everything else is derived from it.
+  property real camZ: 0
+  // Depth of the slab of letters. Glyphs wrap through it modulo this, so the
+  // corridor is endless for free -- no spawning, no destroying, no churn.
+  property real introSpan: 1800
+  property real introNear: 80
+  property real introFocal: 700
+  property real introSpread: 720
+  property real introMinRadius: 45
+
   // Maximum live sprites. A toddler generates input far faster than an adult,
   // and unbounded creation is how a toy turns into a wedged surface -- which
   // in a session lock means a locked-out parent.
@@ -81,7 +108,66 @@ FocusScope {
     }
   }
 
-  onActiveChanged: if (active) forceActiveFocus()
+  onActiveChanged: {
+    if (active) {
+      forceActiveFocus()
+      // Deferred by one turn: when `active` is set as an initial binding it
+      // can fire before `theme` has been assigned, and the intro needs the
+      // palette. callLater runs after the surrounding assignments settle.
+      Qt.callLater(playIntro)
+    } else {
+      introPlaying = false
+    }
+  }
+
+  // Letters rushing past the camera. Each glyph accelerates outward from the
+  // centre on its own heading, growing as it passes -- the depth cue is the
+  // squared progress, which is what makes it read as travel rather than a
+  // spread. Cheap: they are plain Texts destroyed on completion, and they are
+  // deliberately kept out of the sprite budget so a warp can never starve the
+  // toy that follows it.
+  function playIntro() {
+    if (!active || !theme) return
+    camZ = 0
+    introPlaying = true
+    cameraAnim.restart()
+  }
+
+  // Impact. The flight ends by hitting something rather than parking: a flash,
+  // two shockwaves and a spray of debris thrown out through the lens.
+  //
+  // Burst pieces live in their own layer and are exempt from the sprite cap.
+  // They are bounded by construction -- a fixed count, each destroyed when its
+  // animation ends -- so they cannot starve the toy the way uncapped keypress
+  // sprites could.
+  function playBurst() {
+    if (!theme) return
+
+    flash.fire()
+
+    for (var r = 0; r < 3; r++) {
+      burstRingComponent.createObject(burstField, {
+        "tint": theme.randomCrayon(),
+        "maxRadius": Math.max(width, height) * (0.55 + r * 0.28),
+        "span": 620 + r * 220,
+        "delay": r * 90,
+        "thickness": 10 - r * 3
+      })
+    }
+
+    var alphabet = passphrase.toUpperCase() + "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for (var i = 0; i < 34; i++) {
+      var ang = (Math.PI * 2 * i) / 34 + Math.random() * 0.35
+      burstGlyphComponent.createObject(burstField, {
+        "label": alphabet.charAt(Math.floor(Math.random() * alphabet.length)),
+        "tint": theme.randomCrayon(),
+        "angle": ang,
+        "distance": Math.max(width, height) * (0.35 + Math.random() * 0.55),
+        "spin": (Math.random() * 720) - 360,
+        "span": 700 + Math.floor(Math.random() * 450)
+      })
+    }
+  }
 
   // ---- backdrop ------------------------------------------------------
   Rectangle {
@@ -114,6 +200,90 @@ FocusScope {
   Item {
     id: playfield
     anchors.fill: parent
+  }
+
+  // Camera dolly: creeps at first, then piles on speed the whole way and
+  // punches straight into the play surface at full tilt. Easing.InCubic is
+  // the acceleration; the 1/z projection multiplies it, so the last second
+  // covers more ground than the first three combined.
+  //
+  // It deliberately does not ease out. Arriving at speed and cutting is the
+  // point -- decelerating to a stop reads as a screensaver, not an entrance.
+  NumberAnimation {
+    id: cameraAnim
+    target: root
+    property: "camZ"
+    from: 0
+    to: root.introSpan * 4.2
+    duration: root.introMs
+    easing.type: Easing.InCubic
+    onFinished: {
+      root.introPlaying = false
+      root.playBurst()
+    }
+  }
+
+  Item {
+    id: introField
+    anchors.fill: parent
+    visible: root.introPlaying
+    // Lift the whole field out at the end so the last few glyphs do not
+    // simply vanish when the animation stops.
+    opacity: root.introPlaying ? 1 : 0
+    Behavior on opacity { NumberAnimation { duration: 320 } }
+
+    Repeater {
+      model: root.introPlaying ? root.introGlyphs : 0
+
+      Text {
+        id: star
+
+        property real wx: 0
+        property real wy: 0
+        property real wz: 0
+
+        // Fixed world position, chosen once. A minimum radius keeps glyphs off
+        // the dead centre of the screen, where a projected point never moves
+        // and the illusion collapses.
+        Component.onCompleted: {
+          var alphabet = root.passphrase.toUpperCase() + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+          var ang = Math.random() * Math.PI * 2
+          var rad = root.introMinRadius + Math.random() * root.introSpread
+          wx = Math.cos(ang) * rad
+          wy = Math.sin(ang) * rad
+          wz = Math.random() * root.introSpan
+          text = alphabet.charAt(Math.floor(Math.random() * alphabet.length))
+          color = root.theme.randomCrayon()
+        }
+
+        // Wrapping depth: as the camera advances this falls towards `near`,
+        // then rolls back to the far plane, so the same 190 objects supply an
+        // endless corridor. Named `dz` rather than `z` -- Item.z is FINAL and
+        // shadowing it fails to load the whole component.
+        readonly property real dz: {
+          var d = star.wz - root.camZ
+          var s = root.introSpan
+          return root.introNear + ((d % s) + s) % s
+        }
+        readonly property real k: root.introFocal / dz
+        // 0 at the camera, 1 at the far plane.
+        readonly property real depth01: (dz - root.introNear) / root.introSpan
+
+        font.pixelSize: 40
+        font.bold: true
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+
+        x: introField.width / 2 - width / 2 + wx * k
+        y: introField.height / 2 - height / 2 + wy * k
+        scale: k
+
+        // Fade in out of the far haze, blow out as it sweeps past the lens.
+        opacity: depth01 < 0.07
+                 ? depth01 / 0.07
+                 : (depth01 > 0.90 ? (1 - depth01) / 0.10 : 1)
+      }
+    }
   }
 
   // ---- input ---------------------------------------------------------
@@ -188,7 +358,7 @@ FocusScope {
 
     function update(x, y) {
       if (!root.active) return
-      var near = (x <= root.cornerSize && y <= root.cornerSize)
+      var near = (x >= width - root.cornerSize && y <= root.cornerSize)
       if (near === inCorner) return
       inCorner = near
       if (near) { progress = 0; cornerTimer.restart() } else { progress = 0; cornerTimer.stop() }
@@ -208,20 +378,107 @@ FocusScope {
     }
   }
 
+  // Corner-hold progress, pinned to the top right.
   Rectangle {
-    x: 0; y: 0
+    anchors.right: parent.right
+    anchors.top: parent.top
     width: root.cornerSize; height: 4
-    color: root.theme ? root.theme.accent : "#7aa2f7"
+    color: "transparent"
     opacity: cornerWatch.inCorner ? 0.85 : 0
-    scale: 1
-    transformOrigin: Item.Left
     Behavior on opacity { NumberAnimation { duration: 150 } }
 
     Rectangle {
-      anchors.left: parent.left
+      anchors.right: parent.right
       height: parent.height
       width: parent.width * Math.min(1, cornerWatch.progress)
-      color: parent.color
+      color: root.theme ? root.theme.accent : "#7aa2f7"
+    }
+  }
+
+  Item {
+    id: burstField
+    anchors.fill: parent
+  }
+
+  // Full-frame flash at the moment of impact. Painted in the theme's own
+  // foreground so it reads as the surface being lit, not a white frame
+  // spliced in from somewhere else.
+  Rectangle {
+    id: flash
+    anchors.fill: parent
+    color: root.theme ? root.theme.foreground : "#ffffff"
+    opacity: 0
+
+    function fire() { flashAnim.restart() }
+
+    SequentialAnimation {
+      id: flashAnim
+      NumberAnimation { target: flash; property: "opacity"; from: 0; to: 0.85; duration: 70 }
+      NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 420; easing.type: Easing.OutCubic }
+    }
+  }
+
+  // ---- unlock hint ---------------------------------------------------
+  // Deliberately obvious. The threat model is a toddler, not a stranger --
+  // there is nothing to gain by hiding the passphrase, and a parent holding a
+  // squirming child should not have to remember anything. Fills in as you go,
+  // hangman style.
+  Column {
+    id: hint
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.leftMargin: 32
+    anchors.topMargin: 28
+    spacing: 10
+    opacity: (root.active && !root.introPlaying) ? 1 : 0
+    Behavior on opacity { NumberAnimation { duration: 450 } }
+
+    Text {
+      text: "type to unlock"
+      color: root.theme ? root.theme.muted : "#414868"
+      font.pixelSize: 15
+      font.letterSpacing: 2
+    }
+
+    Row {
+      spacing: 12
+
+      Repeater {
+        model: root.passphrase.length
+
+        Column {
+          spacing: 5
+          // Everything before the cursor is already typed.
+          readonly property bool filled: index < root.matchProgress
+          // The next character to type, nudged so it reads as "you are here".
+          readonly property bool current: index === root.matchProgress
+
+          Text {
+            text: root.passphrase.charAt(index).toUpperCase()
+            font.pixelSize: 34
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+            width: 30
+            color: parent.filled
+                   ? (root.theme ? root.theme.accent : "#7aa2f7")
+                   : (root.theme ? root.theme.muted : "#414868")
+            opacity: parent.filled ? 1 : (parent.current ? 0.75 : 0.4)
+            scale: parent.filled ? 1 : 0.9
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
+          }
+
+          Rectangle {
+            width: 30
+            height: 3
+            color: parent.filled
+                   ? (root.theme ? root.theme.accent : "#7aa2f7")
+                   : (root.theme ? root.theme.muted : "#414868")
+            opacity: parent.filled ? 1 : 0.45
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+          }
+        }
+      }
     }
   }
 
@@ -290,6 +547,73 @@ FocusScope {
         NumberAnimation { target: ring; property: "radius_"; from: 0; to: ring.maxRadius; duration: 700; easing.type: Easing.OutCubic }
         NumberAnimation { target: ring; property: "opacity"; from: 0.9; to: 0; duration: 700 }
         onFinished: root.retire(ring)
+      }
+    }
+  }
+
+  Component {
+    id: burstRingComponent
+    Rectangle {
+      id: bring
+      property color tint: "white"
+      property real maxRadius: 400
+      property int span: 700
+      property int delay: 0
+      property real thickness: 8
+      property real radius_: 0
+
+      x: burstField.width / 2 - radius_
+      y: burstField.height / 2 - radius_
+      width: radius_ * 2
+      height: radius_ * 2
+      radius: radius_
+      color: "transparent"
+      border.color: tint
+      border.width: thickness
+      opacity: 0
+
+      SequentialAnimation {
+        running: true
+        PauseAnimation { duration: bring.delay }
+        ParallelAnimation {
+          NumberAnimation { target: bring; property: "radius_"; from: 0; to: bring.maxRadius; duration: bring.span; easing.type: Easing.OutQuad }
+          NumberAnimation { target: bring; property: "opacity"; from: 0.95; to: 0; duration: bring.span }
+        }
+        onFinished: bring.destroy()
+      }
+    }
+  }
+
+  Component {
+    id: burstGlyphComponent
+    Text {
+      id: shard
+      property string label: ""
+      property color tint: "white"
+      property real angle: 0
+      property real distance: 400
+      property real spin: 0
+      property int span: 800
+      property real progress: 0
+
+      text: label
+      color: tint
+      font.pixelSize: 72
+      font.bold: true
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+
+      x: burstField.width / 2 - width / 2 + Math.cos(angle) * distance * progress
+      y: burstField.height / 2 - height / 2 + Math.sin(angle) * distance * progress
+      rotation: spin * progress
+      scale: 0.35 + progress * 1.5
+      opacity: 1 - (progress * progress)
+
+      NumberAnimation on progress {
+        from: 0; to: 1
+        duration: shard.span
+        easing.type: Easing.OutCubic
+        onFinished: shard.destroy()
       }
     }
   }

@@ -1,24 +1,56 @@
 #!/bin/bash
 # Omasmash control CLI (development / standalone mode).
 #
+# Finds its own instance, including one running inside the nested test
+# compositor on a different Wayland display -- quickshell scopes IPC to the
+# current display, so the display has to be discovered and set explicitly or
+# every call from the host fails with "no running instances".
+#
 # `unlock` is the escape hatch that does not need a TTY. It works as long as
-# the process is alive and its IPC socket is answering -- which covers a
-# surface that has stopped painting but not a process that has died. For a
-# dead process while locked, see RECOVERY in the README.
+# the process is alive and answering, which covers a surface that has stopped
+# painting but not a process that has died. For a dead process while locked,
+# see RECOVERY in the README.
 
-set -euo pipefail
+set -uo pipefail
 
 PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="$PROJECT/dev-shell.qml"
 
+find_instance() {
+  quickshell list --all 2>/dev/null | awk -v cfg="$CONFIG" '
+    /^Instance /   { id = $2; sub(":", "", id) }
+    /Config path:/ { path = $3 }
+    /Display connection:/ {
+      disp = $3; sub("wayland/", "", disp)
+      if (path == cfg) { print id, disp }
+    }
+  ' | tail -1
+}
+
+call() {
+  read -r id disp <<<"$(find_instance)"
+  if [[ -z "${id:-}" ]]; then
+    echo "no omasmash instance running -- start one with: $0 run" >&2
+    echo "(or inside the nested compositor: $0 nested)" >&2
+    exit 1
+  fi
+  WAYLAND_DISPLAY="$disp" quickshell ipc -i "$id" call omasmash "$1"
+}
+
 case "${1:-status}" in
   run)     exec quickshell -p "$CONFIG" ;;
-  lock)    quickshell -p "$CONFIG" ipc call omasmash lock ;;
-  unlock)  quickshell -p "$CONFIG" ipc call omasmash unlock ;;
-  locked)  quickshell -p "$CONFIG" ipc call omasmash isLocked ;;
-  status)  quickshell -p "$CONFIG" ipc call omasmash status | (command -v jq >/dev/null && jq . || cat) ;;
+  nested)  exec "$PROJECT/bin/omasmash-nested" ;;
+  # Visual iteration, no lock and no nested compositor. `full` covers the
+  # screen but never takes exclusive keyboard focus -- Escape always quits.
+  preview) exec quickshell -p "$PROJECT/dev-window.qml" ;;
+  full)    exec quickshell -p "$PROJECT/dev-fullscreen.qml" ;;
+  lock)    call lock ;;
+  unlock)  call unlock ;;
+  locked)  call isLocked ;;
+  status)  call status | { command -v jq >/dev/null && jq . || cat; } ;;
+  where)   find_instance ;;
   *)
-    echo "usage: omasmash {run|lock|unlock|locked|status}" >&2
+    echo "usage: omasmash {run|nested|preview|full|lock|unlock|locked|status|where}" >&2
     exit 1
     ;;
 esac

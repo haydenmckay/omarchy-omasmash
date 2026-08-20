@@ -1,0 +1,18 @@
+#!/bin/bash
+# Escape hatch, bound inside the submap itself.
+#
+# While smash mode holds the Hyprland submap, every normal keybind on the
+# system is inert. If this process dies with the submap still active, the user
+# has a working desktop with no shortcuts -- so the submap always carries one
+# deliberately awkward chord (SUPER+CTRL+ALT+SHIFT+Escape) wired to this, and
+# the service resets the submap on startup as a second line of defence.
+#
+# Order matters: restore the keybinds first. Unlocking is the nicety; getting
+# the machine controllable again is the point.
+
+hyprctl dispatch submap reset >/dev/null 2>&1
+
+PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+"$PROJECT/bin/omasmash" unlock >/dev/null 2>&1
+
+exit 0

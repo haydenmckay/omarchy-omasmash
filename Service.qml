@@ -48,11 +48,22 @@ Item {
   property string lastEventAt: ""
   property bool strandedLock: false
   property bool strandedLockResolved: false
+  property bool hotkeysBlocked: false
 
   // Rolling window of recent keystrokes. Never displayed, never logged.
   property string keyBuffer: ""
+  // How many leading characters of the passphrase the user currently has
+  // typed, for the on-screen hint. Recomputed from the buffer rather than
+  // counted up, so a wrong key falls back to the longest still-valid prefix
+  // instead of resetting to zero -- typing "omom" leaves you two in, not out.
+  property int matchProgress: 0
 
-  readonly property bool locked: lockRequested || sessionLock.locked || sessionLock.secure
+  // Deliberately does NOT include sessionLock.secure. `secure` latches true
+  // once the compositor has confirmed the lock and does not clear on unlock,
+  // so folding it in here made `locked` sticky: isLocked reported true after a
+  // clean unlock and the next lock() was refused as "already-locked". It stays
+  // in status() as a diagnostic, but it is not a lock indicator.
+  readonly property bool locked: lockRequested || sessionLock.locked
 
   signal unlockedByPassphrase()
   signal unlockedByCorner()
@@ -83,12 +94,14 @@ Item {
     if (locked) return false
 
     keyBuffer = ""
+    matchProgress = 0
     failedAttempts = 0
     lockRequested = true
     logEvent("lock-requested")
     theme.refresh()
     queueSessionLock()
     watchdog.arm()
+    blockHotkeys()
     return true
   }
 
@@ -122,7 +135,9 @@ Item {
     stabilizeTimer.stop()
     pendingLockTimer.stop()
     watchdog.disarm()
+    releaseHotkeys()
     keyBuffer = ""
+    matchProgress = 0
     pendingPassword = ""
     authenticatingPassword = false
     if (passwordPam.active) passwordPam.abort()
@@ -139,11 +154,25 @@ Item {
     if (!text || text.length === 0) return
 
     keyBuffer = (keyBuffer + text).slice(-64)
+    matchProgress = computeMatch()
 
-    if (passphrase.length > 0 && keyBuffer.slice(-passphrase.length) === passphrase) {
+    if (passphrase.length > 0 && matchProgress >= passphrase.length) {
       unlockedByPassphrase()
       finishUnlock("passphrase")
     }
+  }
+
+  // Longest suffix of the buffer that is also a prefix of the passphrase.
+  // Case-insensitive: a parent reaching over a toddler should not be defeated
+  // by caps lock. The buffer itself stays raw, because PAM needs it verbatim.
+  function computeMatch() {
+    var pass = passphrase.toLowerCase()
+    var buf = keyBuffer.toLowerCase()
+    var max = Math.min(pass.length, buf.length)
+    for (var k = max; k > 0; k--) {
+      if (buf.slice(-k) === pass.slice(0, k)) return k
+    }
+    return 0
   }
 
   // Enter submits whatever has accumulated to PAM. This gives a real password
@@ -154,6 +183,7 @@ Item {
 
     var candidate = keyBuffer
     keyBuffer = ""
+    matchProgress = 0
     if (candidate.length === 0 || !passwordPamConfigured) return
 
     pendingPassword = candidate
@@ -176,6 +206,63 @@ Item {
     if (!lockRequested) return
     unlockedByCorner()
     finishUnlock("corner-hold")
+  }
+
+  // ---- compositor hotkeys --------------------------------------------
+  // ext-session-lock stops input reaching other *clients*, but Hyprland
+  // handles its own keybinds before delivery, so SUPER+Q and friends still
+  // fire while locked. A toddler can close windows through a lock screen.
+  //
+  // A submap fixes it: while one is active only its own binds resolve, so an
+  // almost-empty submap makes all ~234 system binds inert. It must contain at
+  // least one bind to register at all -- an empty submap silently does not
+  // exist -- and that one bind is spent on the panic chord, because a process
+  // that dies holding the submap leaves a desktop with no shortcuts.
+  //
+  // Note the two different "reset"s below: `keyword submap reset` closes the
+  // definition block, `dispatch submap reset` returns to the default map.
+  readonly property string panicBind: "SUPER CTRL ALT SHIFT, Escape, exec, " + panicScript
+  property string panicScript: home + "/Work/omarchy-omasmash/bin/omasmash-panic"
+
+  // `hyprctl keyword bind` appends, so re-registering on every lock grows the
+  // submap without bound. Register once per process, then just switch into it.
+  property bool submapRegistered: false
+
+  function blockHotkeys() {
+    if (hotkeysBlocked) return
+    if (!submapRegistered) {
+      submapEnter.running = true
+      submapRegistered = true
+    } else {
+      submapActivate.running = true
+    }
+    hotkeysBlocked = true
+    logEvent("hotkeys-blocked")
+  }
+
+  function releaseHotkeys() {
+    if (!submapReset.running) submapReset.running = true
+    if (hotkeysBlocked) logEvent("hotkeys-released")
+    hotkeysBlocked = false
+  }
+
+  Process {
+    id: submapEnter
+    command: ["bash", "-c",
+      "hyprctl keyword submap omasmash; " +
+      "hyprctl keyword bind '" + root.panicBind + "'; " +
+      "hyprctl keyword submap reset; " +
+      "hyprctl dispatch submap omasmash"]
+  }
+
+  Process {
+    id: submapActivate
+    command: ["hyprctl", "dispatch", "submap", "omasmash"]
+  }
+
+  Process {
+    id: submapReset
+    command: ["hyprctl", "dispatch", "submap", "reset"]
   }
 
   // ---- SAFETY --------------------------------------------------------
@@ -271,6 +358,8 @@ Item {
         active: root.lockRequested
         cornerHoldMs: root.cornerHoldMs
         cornerSize: root.cornerSize
+        passphrase: root.passphrase
+        matchProgress: root.matchProgress
 
         onKeyTyped: function(text) { root.handleKey(text) }
         onSubmitRequested: root.submitBufferToPam()
@@ -363,7 +452,13 @@ Item {
     }
   }
 
-  Component.onCompleted: checkStrandedLock()
+  Component.onCompleted: {
+    // A crash while the submap was held leaves the desktop keybind-less, and
+    // nothing else on the system will put it back. Clearing it unconditionally
+    // on startup costs nothing when it was never set.
+    releaseHotkeys()
+    checkStrandedLock()
+  }
 
   IpcHandler {
     target: "omasmash"
@@ -395,6 +490,8 @@ Item {
         passwordPam: root.passwordPamConfigured,
         strandedLock: root.strandedLock,
         watchdogArmed: watchdog.armed,
+        hotkeysBlocked: root.hotkeysBlocked,
+        matchProgress: root.matchProgress,
         theme: root.theme.name,
         crayons: root.theme.crayons.length,
         failedAttempts: root.failedAttempts,
