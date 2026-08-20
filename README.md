@@ -94,7 +94,25 @@ detects a lock it did not take (via `omarchy-hyprland-session-locked`) and
 adopts it, giving you a surface that can accept your PAM password.
 
 **Verify you can get to a TTY on your machine before you run the first lock
-test.** That is the floor under everything else here.
+test.** That is the floor under everything else here. On a systemd machine,
+`Ctrl+Alt+F2` spawns a login on demand only if `autovt@.service` resolves to a
+valid `getty@.service` and logind's `NAutoVTs` covers that VT — check both
+rather than assuming.
+
+### Prerequisite: `allow_session_lock_restore`
+
+Recovery step 3 only works if Hyprland has
+`misc:allow_session_lock_restore = true`. Omarchy sets this by default
+(`default/hypr/looknfeel.lua`). **If you have turned it off, there is no
+in-session recovery at all**: a new client trying to take over a stranded lock
+is killed by the compositor with a fatal Wayland protocol error, and only a
+TTY will get you back in. Verify with:
+
+```bash
+hyprctl getoption misc:allow_session_lock_restore
+```
+
+See `docs/premise-test.md` for the full reproduction.
 
 ### Known upstream issues this inherits
 

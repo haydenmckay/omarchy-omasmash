@@ -40,6 +40,11 @@ design decision follows from that. Before touching the lock path:
 - **Cap live sprites.** A toddler generates input faster than an adult;
   unbounded sprite creation wedges the surface, and a wedged surface in a
   session lock means a locked-out parent.
+- **`misc:allow_session_lock_restore` must be true for recovery to work.**
+  Omarchy sets it; the nested harness must too. With it off, a client trying
+  to adopt a stranded lock is killed by a fatal Wayland protocol error and the
+  session is locked forever. Any nested test config must mirror the real
+  session's Hyprland options or it manufactures lockouts that do not exist.
 - **The watchdog canary is animation-driven, not timer-driven.** Animations
   only advance when frames are produced, so a frozen canary truthfully means
   "not painting". A Timer keeps ticking on a surface that renders nothing.
