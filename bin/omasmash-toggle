@@ -18,8 +18,19 @@ set -uo pipefail
 # same commands kept working when run from the repo.
 PROJECT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 
-# `lock` starts the service itself if it is not up, so a first press from the
-# launcher or a hotkey works with nothing running beforehand.
+# Installed as an Omarchy plugin, the service runs inside the shell's own
+# Quickshell instance and is reached through omarchy-shell. A dev checkout has
+# no shell plugin, so it falls back to the standalone CLI, which starts its own
+# instance on demand.
+if command -v omarchy-shell >/dev/null 2>&1; then
+  state=$(omarchy-shell omasmash isLocked 2>/dev/null)
+  if [[ $state == "true" ]]; then
+    exec omarchy-shell omasmash unlock
+  elif [[ $state == "false" ]]; then
+    exec omarchy-shell omasmash lock
+  fi
+fi
+
 if [[ "$("$PROJECT/bin/omasmash" locked 2>/dev/null)" == "true" ]]; then
   exec "$PROJECT/bin/omasmash" unlock
 else

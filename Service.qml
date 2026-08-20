@@ -232,8 +232,20 @@ Item {
   //
   // Note the two different "reset"s below: `keyword submap reset` closes the
   // definition block, `dispatch submap reset` returns to the default map.
+  // Resolved from this file's own location, so it is correct whether the
+  // plugin was installed by `omarchy plugin add` into
+  // ~/.config/omarchy/plugins/<id>/ or is running from a dev checkout. It was
+  // previously hardcoded to the author's ~/Work path, which meant the panic
+  // chord -- the one keyboard route back when the submap has made every other
+  // bind inert -- pointed at a file that does not exist on anybody else's
+  // machine. That is the single worst thing in this plugin to get wrong.
+  readonly property string pluginDir: {
+    var dir = Qt.resolvedUrl(".").toString()
+    if (dir.indexOf("file://") === 0) dir = dir.substring(7)
+    return decodeURIComponent(dir.replace(/\/$/, ""))
+  }
+  readonly property string panicScript: pluginDir + "/bin/omasmash-panic"
   readonly property string panicBind: "SUPER CTRL ALT SHIFT, Escape, exec, " + panicScript
-  property string panicScript: home + "/Work/omarchy-omasmash/bin/omasmash-panic"
 
   // `hyprctl keyword bind` appends, so re-registering on every lock grows the
   // submap without bound. Register once per process, then just switch into it.
@@ -520,6 +532,7 @@ Item {
         hotkeysBlocked: root.hotkeysBlocked,
         matchProgress: root.matchProgress,
         theme: root.theme.name,
+        pluginDir: root.pluginDir,
         crayons: root.theme.crayons.length,
         failedAttempts: root.failedAttempts,
         lastEvent: root.lastEvent,
