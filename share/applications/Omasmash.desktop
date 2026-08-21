@@ -8,5 +8,5 @@ Icon=omasmash
 Terminal=false
 Type=Application
 Categories=Utility;Amusement;
-Keywords=smash;baby;toddler;kids;child;lock;stress;play;
+Keywords=smash;baby;toddler;kids;child;lock;lockscreen;stress;play;keyboard;
 StartupNotify=true

@@ -59,12 +59,25 @@ Switch themes and it follows — the palette is re-read when
 
 ## Starting it
 
-`bin/omasmash-toggle` is the command to bind a hotkey to — it locks if
-unlocked and unlocks if locked, so one chord does both.
+Three ways in, all of them the same toggle underneath — it locks if unlocked
+and unlocks if locked, so one action does both.
 
-**No keybinding is installed by this project.** Binding a chord that locks
-your session is your call; see [`docs/hotkey.md`](docs/hotkey.md) for the
-suggested bind and how to pick a chord a toddler cannot reach.
+**From the app menu.** Hit `SUPER`, type `omasmash`. This requires having run
+`bin/omasmash-install` — `omarchy plugin add` installs the plugin, not a
+desktop entry, so the menu entry does not appear on its own.
+
+**From a hotkey.** Bind a chord to `omasmash-toggle`. **No keybinding is
+installed by this project** — binding a chord that locks your session is your
+call. See [`docs/hotkey.md`](docs/hotkey.md) for a suggested bind and how to
+pick one a toddler cannot reach with a flat palm.
+
+**From a terminal**, which is also how you get out of trouble:
+
+```bash
+omasmash-toggle                    # if you ran omasmash-install
+omarchy-shell omasmash lock        # always available
+omarchy-shell omasmash unlock
+```
 
 ## Unlocking
 
