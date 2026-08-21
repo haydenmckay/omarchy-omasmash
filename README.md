@@ -41,12 +41,10 @@ you into the play surface.
 
 ![themes](docs/media/omasmash-themes.gif)
 
-Tokyo Night, Gruvbox, Rosé Pine, Everforest — switched live, mid-play. Letters,
-splashes and shockwaves are all drawn from the active theme's own palette, over
-its own wallpaper, and light themes work as well as dark ones.
+Tokyo Night, Gruvbox, Rosé Pine, Everforest — including light ones.
 
-This is the part a browser tab cannot do. Every other keyboard-smash toy looks
-like itself; this one looks like *your desktop*.
+Every other keyboard-smash toy looks like itself. This one looks like your
+desktop.
 
 ## Theming
 
