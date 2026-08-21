@@ -4,11 +4,11 @@
 
 **Beautiful, theme-aware keyboard smash with a real lock screen underneath.**
 
+Hand the keyboard to a toddler and they can't reach your agents — and neither
+can you, on the tenth *"fix it, and don't make any mistakes."*
+
 Every keypress paints a big letter in your active theme's colours, every click
 splashes, every drag trails — and the machine underneath stays untouchable.
-
-Little fingers can't reach your agents — and neither can you, on the tenth
-*"fix it, and don't make any mistakes."*
 
 > **Status: pre-alpha.** The session-lock premise test passes
 > (`docs/premise-test.md`), but the passphrase and corner-hold unlock paths
@@ -35,7 +35,18 @@ So: **Omasmash is a lock screen that plays instead of asking for a password.**
 ![demo](docs/media/omasmash-demo.gif)
 
 It opens by flying the camera through a corridor of letters, hits, and drops
-you into the play surface. Everything is painted from your active theme.
+you into the play surface.
+
+### It follows your theme
+
+![themes](docs/media/omasmash-themes.gif)
+
+Tokyo Night, Gruvbox, Rosé Pine, Everforest — switched live, mid-play. Letters,
+splashes and shockwaves are all drawn from the active theme's own palette, over
+its own wallpaper, and light themes work as well as dark ones.
+
+This is the part a browser tab cannot do. Every other keyboard-smash toy looks
+like itself; this one looks like *your desktop*.
 
 ## Theming
 

@@ -7,8 +7,8 @@ someone what the code does, not why they would want it.
 ## Description (the one in `manifest.json`)
 
 > Beautiful, theme-aware keyboard smash with a real lock screen underneath.
-> Little fingers can't reach your agents — and neither can you, on the tenth
-> "fix it, and don't make any mistakes."
+> Hand the keyboard to a toddler and they can't reach your agents — and neither
+> can you, on the tenth "fix it, and don't make any mistakes."
 
 187 characters, doing four jobs.
 
@@ -21,10 +21,15 @@ the guarantee *and* puts "lock screen" where the search index will find it.
 Lock screens are two of this marketplace's top six listings, so that phrase is
 worth its space twice over.
 
-**"Little fingers can't reach your agents — and neither can you"** names both
-audiences in one parallel instead of the flabby "for toddlers and adults alike".
-The turn does real work: the adult benefit is not just stress relief, it is
-being stopped from typing something you will regret.
+**"Hand the keyboard to a toddler … and neither can you"** names both audiences
+in one parallel instead of the flabby "for toddlers and adults alike". The turn
+does real work: the adult benefit is not just stress relief, it is being
+stopped from typing something you will regret.
+
+An earlier draft opened the clause with "little fingers", which was more
+elegant and worse. **"toddler" is the word people actually search**, and it was
+then absent from the listing text entirely — living only in the desktop entry's
+keywords, where the marketplace index never sees it. Say the word.
 
 **The closing quote** is the shareable part, aimed at people already running
 agents — which on this marketplace is everyone.
@@ -64,7 +69,16 @@ Put "lock screen" in the description text where the search index will see it.
 `preview.png` is a frame from the warp intro. The loading sequence is the most
 distinctive thing here and the one that survives being shrunk to a card.
 
-## The shareable asset
+## The shareable assets
 
-`docs/media/omasmash-demo.gif`. A GIF of a toddler actually smashing keys would
-be better and is worth shooting when the opportunity presents itself.
+Two, doing different jobs:
+
+- `docs/media/omasmash-demo.gif` — the warp intro and the play surface. The
+  hook.
+- `docs/media/omasmash-themes.gif` — four themes switched live, mid-play. The
+  **argument**. Every browser-based smash toy looks like itself; this one looks
+  like the viewer's own desktop, and no amount of description does that as
+  quickly as watching the palette change under the letters.
+
+A GIF of an actual toddler smashing keys would beat both, and is worth shooting
+when the opportunity presents itself.
