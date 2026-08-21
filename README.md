@@ -264,6 +264,12 @@ on your PATH:
 ~/.config/omarchy/plugins/io.github.haydenmckay.omasmash/bin/omasmash-install
 ```
 
+It installs a desktop entry, an icon, and three symlinks in `~/.local/bin` —
+and **nothing else, and nothing it does not own**. Every target is checked
+first; if anything is already there that this installer did not create, it
+lists them, changes nothing, and exits. Pass `--force` to replace them
+deliberately, or `--uninstall` to remove only what it recorded creating.
+
 No hotkey is installed — binding a chord that locks your session is your
 decision. See [`docs/hotkey.md`](docs/hotkey.md).
 
@@ -302,10 +308,12 @@ omarchy plugin remove io.github.haydenmckay.omasmash
 omarchy-restart-shell
 ```
 
-If you ran `omasmash-install`, also remove
-`~/.local/share/applications/Omasmash.desktop`,
-`~/.local/share/icons/hicolor/256x256/apps/omasmash.png` and the
-`omasmash*` symlinks in `~/.local/bin`.
+If you ran `omasmash-install`, undo it first — it removes only the files it
+recorded creating, so nothing of yours goes with it:
+
+```bash
+bin/omasmash-install --uninstall
+```
 
 ## Development
 

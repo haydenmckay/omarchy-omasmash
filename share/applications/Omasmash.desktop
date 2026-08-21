@@ -10,3 +10,4 @@ Type=Application
 Categories=Utility;Amusement;
 Keywords=smash;baby;toddler;kids;child;lock;lockscreen;stress;play;keyboard;
 StartupNotify=true
+X-Omasmash-Managed=true
