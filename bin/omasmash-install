@@ -142,6 +142,9 @@ if (( UNINSTALL )); then
     fi
   done
   [[ -f $LEDGER && ! -L $LEDGER ]] && rm -f -- "$LEDGER"
+  # Leave nothing behind: drop the state directory too, but only when it is
+  # genuinely empty and not a symlink, so a shared or repurposed path is safe.
+  [[ -d $STATE && ! -L $STATE ]] && rmdir -- "$STATE" 2>/dev/null
   echo "Removed $removed file(s)."
   if (( ${#skipped[@]} > 0 )); then
     echo "Left alone (no longer what this installer created):" >&2
