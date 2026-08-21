@@ -1,17 +1,18 @@
 #!/bin/bash
 # Put Omasmash in the app menu, and put its CLI on PATH.
 #
-# Optional. `omarchy plugin add` installs the plugin itself; this only adds a
-# desktop entry, an icon, and three symlinks.
+# Optional. `omarchy plugin add` installs the plugin itself; this only manages
+# five fixed paths: a desktop entry, an icon, and three symlinks.
 #
-# It will not overwrite anything it does not own. Every target is checked
-# first: a file this installer previously created (recorded in its state file),
-# a desktop entry carrying our marker, or a symlink already pointing into an
-# Omasmash directory counts as ours. Anything else is left alone and reported,
-# and the install stops without changing a thing unless you pass --force.
+# It never writes to or deletes a path whose current on-disk object is not the
+# one this installer created. Ownership is decided by identity -- a sha256 for
+# regular files, an exact symlink target for links -- not by the ledger alone,
+# because a recorded path can be replaced by the user or another package after
+# the fact. A recorded path whose object no longer matches is treated as
+# foreign, and needs --force like any other stranger.
 #
-# Nothing here touches Hyprland config -- binding a hotkey stays your decision,
-# see docs/hotkey.md.
+# Nothing here touches Hyprland config; binding a hotkey stays your decision
+# (docs/hotkey.md).
 
 set -uo pipefail
 
@@ -22,10 +23,39 @@ BIN="$HOME/.local/bin"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/omasmash"
 LEDGER="$STATE/installed-files"
 
-DESKTOP="$APPS/Omasmash.desktop"
-ICON="$ICONS/omasmash.png"
-LINKS=(omasmash omasmash-toggle omasmash-panic)
-MARKER="X-Omasmash-Managed=true"
+SRC_DESKTOP="$PROJECT/share/applications/Omasmash.desktop"
+SRC_ICON="$PROJECT/share/icons/omasmash.png"
+
+# The complete, fixed set of paths this installer may ever touch. Uninstall
+# iterates this allowlist, never arbitrary ledger contents.
+declare -a TARGETS=(
+  "$APPS/Omasmash.desktop"
+  "$ICONS/omasmash.png"
+  "$BIN/omasmash"
+  "$BIN/omasmash-toggle"
+  "$BIN/omasmash-panic"
+)
+# Parallel arrays: kind (file|link) and the expected identity for a fresh
+# install -- sha256 of the source file, or the exact symlink destination.
+declare -a KINDS=(file file link link link)
+expected_identity() {
+  case $1 in
+    "$APPS/Omasmash.desktop")  sha_of "$SRC_DESKTOP" ;;
+    "$ICONS/omasmash.png")     sha_of "$SRC_ICON" ;;
+    "$BIN/omasmash")           printf '%s' "$PROJECT/bin/omasmash" ;;
+    "$BIN/omasmash-toggle")    printf '%s' "$PROJECT/bin/omasmash-toggle" ;;
+    "$BIN/omasmash-panic")     printf '%s' "$PROJECT/bin/omasmash-panic" ;;
+  esac
+}
+kind_of() {
+  local i
+  for i in "${!TARGETS[@]}"; do
+    [[ ${TARGETS[$i]} == "$1" ]] && { printf '%s' "${KINDS[$i]}"; return 0; }
+  done
+  return 1
+}
+
+sha_of() { sha256sum -- "$1" 2>/dev/null | cut -d' ' -f1; }
 
 FORCE=0
 UNINSTALL=0
@@ -35,59 +65,100 @@ for arg in "$@"; do
     --uninstall) UNINSTALL=1 ;;
     -h|--help)
       echo "usage: omasmash-install [--force] [--uninstall]"
-      echo "  --force      replace targets even when they are not ours"
-      echo "  --uninstall  remove only the files this installer created"
+      echo "  --force      act on targets whose current object is not ours"
+      echo "  --uninstall  remove only paths still matching what we installed"
       exit 0 ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
 
-in_ledger() { [[ -f $LEDGER ]] && grep -qxF "$1" "$LEDGER"; }
-
-# A target is ours if we recorded creating it, if it is a desktop entry
-# carrying our marker, or if it is a symlink already pointing at an Omasmash
-# directory. Anything else belongs to the user or another package.
-is_ours() {
-  local target=$1
-  [[ -e $target || -L $target ]] || return 0        # absent: free to create
-  in_ledger "$target" && return 0
-  if [[ -L $target ]]; then
-    local dest; dest=$(readlink -f "$target" 2>/dev/null) || return 1
-    [[ $dest == *omasmash* ]] && return 0
-  fi
-  [[ $target == "$DESKTOP" ]] && grep -qF "$MARKER" "$target" 2>/dev/null && return 0
+# ---- ledger ----------------------------------------------------------
+# path <TAB> kind <TAB> identity. Read-only input to the identity check: it
+# says what we last wrote, and is believed only when the object on disk still
+# matches it.
+ledger_lookup() {
+  [[ -f $LEDGER && ! -L $LEDGER ]] || return 1
+  local line
+  while IFS=$'\t' read -r p k id; do
+    [[ $p == "$1" ]] && { printf '%s\t%s' "$k" "$id"; return 0; }
+  done < "$LEDGER"
   return 1
 }
 
-record() { mkdir -p "$STATE"; grep -qxF "$1" "$LEDGER" 2>/dev/null || echo "$1" >> "$LEDGER"; }
+ledger_write() {
+  # Atomic, and refuses to follow a symlink at either the directory or the
+  # ledger itself -- a planted symlink there would otherwise redirect a write.
+  [[ -L $STATE ]] && { echo "refusing: $STATE is a symlink" >&2; return 1; }
+  mkdir -p -- "$STATE" || return 1
+  [[ -L $LEDGER ]] && { echo "refusing: $LEDGER is a symlink" >&2; return 1; }
+  local tmp
+  tmp=$(mktemp "$STATE/.ledger.XXXXXX") || return 1
+  printf '%s' "$1" > "$tmp" && mv -f -- "$tmp" "$LEDGER"
+}
+
+# ---- ownership -------------------------------------------------------
+# Ours only if the object that is on disk right now is the object we created.
+# Absent counts as ours (free to create). Anything else is foreign.
+is_ours() {
+  local target=$1 kind ident rec reck recid
+  kind=$(kind_of "$target") || return 1
+
+  [[ -e $target || -L $target ]] || return 0          # absent
+
+  if rec=$(ledger_lookup "$target"); then
+    reck=${rec%%$'\t'*}; recid=${rec#*$'\t'}
+  else
+    reck=""; recid=""
+  fi
+
+  case $kind in
+    link)
+      [[ -L $target ]] || return 1                    # must still be a symlink
+      # readlink, not readlink -f: compare the link's own target exactly,
+      # without resolving chains that could point somewhere else entirely.
+      local dest; dest=$(readlink -- "$target") || return 1
+      [[ $dest == "$(expected_identity "$target")" ]] && return 0
+      [[ $reck == link && -n $recid && $dest == "$recid" ]] && return 0
+      return 1 ;;
+    file)
+      [[ -f $target && ! -L $target ]] || return 1     # regular file, never a link
+      ident=$(sha_of "$target") || return 1
+      [[ -n $ident && $ident == "$(expected_identity "$target")" ]] && return 0
+      [[ $reck == file && -n $recid && $ident == "$recid" ]] && return 0
+      return 1 ;;
+  esac
+  return 1
+}
 
 # ---- uninstall -------------------------------------------------------
 if (( UNINSTALL )); then
-  if [[ ! -f $LEDGER ]]; then
-    echo "Nothing to uninstall: no record of an install at $LEDGER"
-    exit 0
-  fi
-  removed=0
-  while IFS= read -r path; do
-    [[ -n $path ]] || continue
-    if [[ -e $path || -L $path ]]; then
-      rm -f -- "$path" && { echo "  removed $path"; removed=$((removed+1)); }
+  removed=0; skipped=()
+  for t in "${TARGETS[@]}"; do
+    [[ -e $t || -L $t ]] || continue
+    if is_ours "$t" || (( FORCE )); then
+      rm -f -- "$t" && { echo "  removed $t"; removed=$((removed+1)); }
+    else
+      skipped+=("$t")
     fi
-  done < "$LEDGER"
-  rm -f "$LEDGER"
-  echo "Removed $removed file(s). The plugin itself is untouched:"
+  done
+  [[ -f $LEDGER && ! -L $LEDGER ]] && rm -f -- "$LEDGER"
+  echo "Removed $removed file(s)."
+  if (( ${#skipped[@]} > 0 )); then
+    echo "Left alone (no longer what this installer created):" >&2
+    printf '  %s\n' "${skipped[@]}" >&2
+    echo "Re-run with --force to remove them anyway." >&2
+  fi
+  echo "The plugin itself is untouched:"
   echo "  omarchy plugin remove io.github.haydenmckay.omasmash"
   exit 0
 fi
 
-# ---- check before touching anything ----------------------------------
+# ---- check everything before writing anything ------------------------
 conflicts=()
-is_ours "$DESKTOP" || conflicts+=("$DESKTOP")
-is_ours "$ICON"    || conflicts+=("$ICON")
-for l in "${LINKS[@]}"; do is_ours "$BIN/$l" || conflicts+=("$BIN/$l"); done
+for t in "${TARGETS[@]}"; do is_ours "$t" || conflicts+=("$t"); done
 
 if (( ${#conflicts[@]} > 0 && FORCE == 0 )); then
-  echo "Refusing to overwrite files this installer does not own:" >&2
+  echo "Refusing to replace paths that are not what this installer created:" >&2
   printf '  %s\n' "${conflicts[@]}" >&2
   echo >&2
   echo "Nothing has been changed. Move or delete them yourself, or re-run" >&2
@@ -96,21 +167,37 @@ if (( ${#conflicts[@]} > 0 && FORCE == 0 )); then
 fi
 
 # ---- install ---------------------------------------------------------
-mkdir -p "$APPS" "$ICONS" "$BIN" "$STATE"
-
-install -m 0644 "$PROJECT/share/icons/omasmash.png" "$ICON" && record "$ICON"
-install -m 0644 "$PROJECT/share/applications/Omasmash.desktop" "$DESKTOP" && record "$DESKTOP"
-for l in "${LINKS[@]}"; do
-  ln -sfn "$PROJECT/bin/$l" "$BIN/$l" && record "$BIN/$l"
+for d in "$APPS" "$ICONS" "$BIN" "$STATE"; do
+  [[ -L $d ]] && { echo "refusing: $d is a symlink" >&2; exit 1; }
+  mkdir -p -- "$d" || exit 1
 done
+
+ledger_new=""
+for t in "${TARGETS[@]}"; do
+  kind=$(kind_of "$t")
+  # Remove first rather than writing in place: `install` would follow a
+  # symlink sitting at the target and write through it to somewhere else.
+  [[ -e $t || -L $t ]] && rm -f -- "$t"
+  case $kind in
+    file)
+      case $t in
+        *Omasmash.desktop) install -m 0644 -- "$SRC_DESKTOP" "$t" || exit 1 ;;
+        *omasmash.png)     install -m 0644 -- "$SRC_ICON" "$t" || exit 1 ;;
+      esac ;;
+    link)
+      ln -sn -- "$(expected_identity "$t")" "$t" || exit 1 ;;
+  esac
+  ledger_new+="$t"$'\t'"$kind"$'\t'"$(expected_identity "$t")"$'\n'
+done
+
+ledger_write "$ledger_new" || echo "warning: could not record installed files" >&2
 
 command -v update-desktop-database >/dev/null 2>&1 && \
   update-desktop-database "$APPS" >/dev/null 2>&1
 
 echo "Installed:"
-printf '  %s\n' "$DESKTOP" "$ICON"
-printf '  %s\n' "${LINKS[@]/#/$BIN/}"
-(( ${#conflicts[@]} > 0 )) && echo "  (--force replaced ${#conflicts[@]} pre-existing file(s))"
+printf '  %s\n' "${TARGETS[@]}"
+(( ${#conflicts[@]} > 0 )) && echo "  (--force replaced ${#conflicts[@]} pre-existing object(s))"
 echo
 echo "Search 'Omasmash' in the app menu."
 echo "Undo with: $0 --uninstall"
