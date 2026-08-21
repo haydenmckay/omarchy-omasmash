@@ -86,9 +86,10 @@ Three ways out, in order of everyday usefulness:
 1. **Type the passphrase** — `omarchy` by default. Seven characters in
    sequence is effectively unreachable by random smashing. Nothing is
    displayed while you type.
-2. **Hold the top-left corner** for three seconds. A thin accent-coloured bar
-   fills to show progress. Discoverable for an adult, impossible while
-   flailing.
+2. **Hold the top-right corner** for three seconds — there is a small
+   *"or hold here"* plate there, which fills as you hold. Discoverable for an
+   adult, impossible while flailing. It sits opposite the passphrase hint so
+   that reaching for one cannot trigger the other.
 3. **Type your real password and press Enter.** There is no visible field —
    keystrokes accumulate invisibly and Enter submits them to PAM. This always
    works, even if you changed the passphrase and forgot it. Safe to use in
