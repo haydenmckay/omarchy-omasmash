@@ -4,6 +4,16 @@
 locks your session is your decision, so the bind below is documented, not
 installed.
 
+## Letting an agent do it
+
+If you would rather not hand-edit Hyprland config, the README has a paste-ready
+prompt under **Or just ask your agent**. Two things worth insisting on either
+way, whether a human or an agent is doing it:
+
+- **Check for a conflict first.** `SUPER+SHIFT+S` looks free and is not on a
+  stock Omarchy install.
+- **Confirm the recovery routes before the first lock**, not after.
+
 ## The bind
 
 Add to `~/.config/hypr/bindings.conf` (or wherever your user binds live):

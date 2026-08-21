@@ -267,6 +267,34 @@ on your PATH:
 No hotkey is installed — binding a chord that locks your session is your
 decision. See [`docs/hotkey.md`](docs/hotkey.md).
 
+### Or just ask your agent
+
+You are probably running one. Paste this at it:
+
+```text
+Install the Omasmash plugin for Omarchy from
+https://github.com/haydenmckay/omarchy-omasmash
+
+Then:
+1. omarchy plugin add the repo and enable it, then omarchy-restart-shell
+   (the shell has its file watcher disabled and will not pick it up otherwise)
+2. Run bin/omasmash-install from the installed plugin directory so it appears
+   in the app menu
+3. Bind a hotkey to omasmash-toggle. Pick a chord a toddler cannot hit with a
+   flat palm, and check it against `hyprctl binds` first so you do not
+   clobber an existing Omarchy binding
+4. Before locking anything, read the RECOVERY section of the README back to me
+   and confirm I can reach a TTY on this machine
+```
+
+Step 4 is not padding. This takes a real session lock, and the compositor will
+keep the screen locked if the process dies — you want to know your way out
+before you need it, not after.
+
+Binding a hotkey means editing your Hyprland config, which this project will
+never do on its own. Asking your agent to do it is your consent; it is not the
+same as the installer doing it behind you.
+
 ### Removing
 
 ```bash
